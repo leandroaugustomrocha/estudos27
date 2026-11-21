@@ -2,7 +2,7 @@
 <CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
     <deploymentStatus>Deployed</deploymentStatus>
     <description
-  >The Projeto object tracks projects within the estudos27 study org. Each record is identified by its Nome do Projeto and supports activities, field history and reporting. Commonly used for project tracking, Apex and LWC exercises, and reporting practice.</description>
+  >The Projeto object tracks projects in the estudos27 study org. It captures Nome do Projeto, Start Date, Budget and Status (Not Started/In Progress/Complete only), with activities and field history enabled. Commonly used for project tracking, Apex and LWC exercises, and reporting practice.</description>
     <enableActivities>true</enableActivities>
     <enableHistory>true</enableHistory>
     <enableReports>true</enableReports>
