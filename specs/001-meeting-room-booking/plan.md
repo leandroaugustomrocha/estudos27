@@ -101,26 +101,27 @@ Lido com `Booking_Setting__mdt.getInstance('Default')` (não consome SOQL).
 
 ## Componentes (inventário de metadata)
 
-| Tipo               | Nome                                                                                                   | Ação  | Camada                                     | REQ                    |
-| ------------------ | ------------------------------------------------------------------------------------------------------ | ----- | ------------------------------------------ | ---------------------- |
-| CustomObject       | `Meeting_Room__c` (+ 4 campos, 2 VRs)                                                                  | criar | dados                                      | 001, 002, 017          |
-| CustomObject       | `Room_Booking__c` (+ 6 campos)                                                                         | criar | dados                                      | 003, 011, 024          |
-| CustomObject (mdt) | `Booking_Setting__mdt` (+ 3 campos)                                                                    | criar | config                                     | 020                    |
-| CustomMetadata     | `Booking_Setting.Default`                                                                              | criar | config                                     | 009, 019, 020          |
-| CustomLabels       | 9 labels `Room_Booking_*`                                                                              | criar | config                                     | 004–009, 019, 025      |
-| PermissionSet      | `Meeting_Room_User`                                                                                    | criar | acesso                                     | 014, 016, 023          |
-| PermissionSet      | `Meeting_Room_Admin`                                                                                   | criar | acesso                                     | 015, 023               |
-| CustomTab          | `Meeting_Room__c`, `Room_Booking__c`                                                                   | criar | UI                                         | 001, 003               |
-| Layout             | `Meeting_Room__c-Meeting Room Layout`, `Room_Booking__c-Room Booking Layout`                           | criar | UI                                         | 001, 003               |
-| ApexClass          | `TriggerHandler`                                                                                       | criar | framework (base virtual + bypass)          | —                      |
-| ApexTrigger        | `RoomBookingTrigger`                                                                                   | criar | trigger                                    | todos de reserva       |
-| ApexClass          | `RoomBookingTriggerHandler`                                                                            | criar | handler                                    | todos de reserva       |
-| ApexClass          | `RoomBookingService`                                                                                   | criar | service                                    | 004–011, 019, 021, 025 |
-| ApexClass          | `MeetingRoomSelector`                                                                                  | criar | selector                                   | 006–008                |
-| ApexClass          | `RoomBookingSelector`                                                                                  | criar | selector                                   | 005, 025               |
-| ApexClass          | `BookingSettings`                                                                                      | criar | config (lê o mdt, override `@TestVisible`) | 009, 019, 020          |
-| ApexClass (test)   | `RoomBookingTestDataFactory`                                                                           | criar | teste                                      | —                      |
-| ApexClass (test)   | `RoomBookingServiceTest`, `RoomBookingSecurityTest`, `MeetingRoomValidationTest`, `TriggerHandlerTest` | criar | teste                                      | todos                  |
+| Tipo               | Nome                                                                                                        | Ação  | Camada                                     | REQ                       |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- | ----- | ------------------------------------------ | ------------------------- |
+| CustomObject       | `Meeting_Room__c` (+ 4 campos, 2 VRs)                                                                       | criar | dados                                      | 001, 002, 017             |
+| CustomObject       | `Room_Booking__c` (+ 6 campos)                                                                              | criar | dados                                      | 003, 011, 024             |
+| CustomObject (mdt) | `Booking_Setting__mdt` (+ 3 campos)                                                                         | criar | config                                     | 020                       |
+| CustomMetadata     | `Booking_Setting.Default`                                                                                   | criar | config                                     | 009, 019, 020             |
+| CustomLabels       | 9 labels `Room_Booking_*`                                                                                   | criar | config                                     | 004–009, 019, 025         |
+| PermissionSet      | `Meeting_Room_User`                                                                                         | criar | acesso                                     | 014, 016, 023             |
+| PermissionSet      | `Meeting_Room_Admin`                                                                                        | criar | acesso                                     | 015, 023                  |
+| CustomTab          | `Meeting_Room__c`, `Room_Booking__c`                                                                        | criar | UI                                         | 001, 003                  |
+| Layout             | `Meeting_Room__c-Meeting Room Layout`, `Room_Booking__c-Room Booking Layout`                                | criar | UI                                         | 001, 003                  |
+| ListView           | `Meeting_Room__c.All` ("Todas as salas"), `Room_Booking__c.All` ("Todas as reservas") — visíveis para todos | criar | UI                                         | 001, 014 (AC-040, AC-041) |
+| ApexClass          | `TriggerHandler`                                                                                            | criar | framework (base virtual + bypass)          | —                         |
+| ApexTrigger        | `RoomBookingTrigger`                                                                                        | criar | trigger                                    | todos de reserva          |
+| ApexClass          | `RoomBookingTriggerHandler`                                                                                 | criar | handler                                    | todos de reserva          |
+| ApexClass          | `RoomBookingService`                                                                                        | criar | service                                    | 004–011, 019, 021, 025    |
+| ApexClass          | `MeetingRoomSelector`                                                                                       | criar | selector                                   | 006–008                   |
+| ApexClass          | `RoomBookingSelector`                                                                                       | criar | selector                                   | 005, 025                  |
+| ApexClass          | `BookingSettings`                                                                                           | criar | config (lê o mdt, override `@TestVisible`) | 009, 019, 020             |
+| ApexClass (test)   | `RoomBookingTestDataFactory`                                                                                | criar | teste                                      | —                         |
+| ApexClass (test)   | `RoomBookingServiceTest`, `RoomBookingSecurityTest`, `MeetingRoomValidationTest`, `TriggerHandlerTest`      | criar | teste                                      | todos                     |
 
 Labels: `Room_Booking_End_Before_Start`, `Room_Booking_Room_Conflict`,
 `Room_Booking_Batch_Conflict`, `Room_Booking_Capacity_Exceeded`,
@@ -199,59 +200,60 @@ próxima segunda/quarta a partir de daqui a 2 dias", no fuso do usuário. Os
 limites usam o registro `Default` ou o override `@TestVisible` de
 `BookingSettings` (AC-027).
 
-| AC      | Classe de teste           | Método                                                    | Tipo                            |
-| ------- | ------------------------- | --------------------------------------------------------- | ------------------------------- |
-| AC-001  | MeetingRoomValidationTest | adminCreatesActiveRoom_AC001                              | positivo, runAs                 |
-| AC-002  | MeetingRoomValidationTest | zeroCapacityRejected_AC002                                | negativo                        |
-| AC-023  | MeetingRoomValidationTest | closingBeforeOpeningRejected_AC023                        | negativo                        |
-| AC-020  | MeetingRoomValidationTest | collaboratorCannotEditRoom_AC020                          | negativo, runAs                 |
-| AC-003  | RoomBookingServiceTest    | collaboratorBooksFreeSlot_AC003                           | positivo, runAs                 |
-| AC-004  | RoomBookingServiceTest    | endBeforeStartRejected_AC004                              | negativo                        |
-| AC-005  | RoomBookingServiceTest    | overlappingBookingRejected_AC005                          | negativo                        |
-| AC-006  | RoomBookingServiceTest    | sameSlotOtherRoomAllowed_AC006                            | positivo                        |
-| AC-007  | RoomBookingServiceTest    | adjacentBookingAllowed_AC007                              | positivo                        |
-| AC-007b | RoomBookingServiceTest    | containedBookingRejected_AC007b                           | negativo                        |
-| AC-008  | RoomBookingServiceTest    | overCapacityRejected_AC008                                | negativo                        |
-| AC-009  | RoomBookingServiceTest    | afterClosingRejected_AC009                                | negativo                        |
-| AC-009b | RoomBookingServiceTest    | weekendRejected_AC009b                                    | negativo                        |
-| AC-009d | RoomBookingServiceTest    | exactOpeningHoursAllowed_AC009d                           | positivo                        |
-| AC-031  | RoomBookingServiceTest    | openingHoursUseBookerTimeZone_AC031                       | positivo + negativo, runAs      |
-| AC-010  | RoomBookingServiceTest    | inactiveRoomRejected_AC010                                | negativo                        |
-| AC-011  | RoomBookingServiceTest    | durationLimitsEnforced_AC011                              | negativo + limites              |
-| AC-024  | RoomBookingServiceTest    | pastStartRejected_AC024                                   | negativo                        |
-| AC-025  | RoomBookingServiceTest    | tooFarAheadRejected_AC025                                 | negativo                        |
-| AC-026  | RoomBookingServiceTest    | subjectEditOnStartedBookingAllowed_AC026                  | positivo                        |
-| AC-027  | RoomBookingServiceTest    | configurableMaxDuration_AC027                             | positivo                        |
-| AC-012  | RoomBookingServiceTest    | extendWithoutSelfConflict_AC012                           | positivo                        |
-| AC-013  | RoomBookingServiceTest    | extendIntoNextBookingRejected_AC013                       | negativo                        |
-| AC-014  | RoomBookingServiceTest    | cancelStampsAndFreesSlot_AC014                            | positivo                        |
-| AC-028  | RoomBookingServiceTest    | reactivateWhenFree_AC028                                  | positivo                        |
-| AC-029  | RoomBookingServiceTest    | reactivateIntoConflictRejected_AC029                      | negativo                        |
-| AC-015  | RoomBookingServiceTest    | bulkInsert200Valid_AC015                                  | bulk                            |
-| AC-035  | RoomBookingServiceTest    | bulkFirstInBatchWins_AC035                                | bulk, negativo, sucesso parcial |
-| AC-036  | RoomBookingServiceTest    | bulkRejectedDoesNotBlockNext_AC036                        | bulk, sucesso parcial           |
-| AC-037  | RoomBookingServiceTest    | bulkInvalidDoesNotBlockNext_AC037                         | bulk, sucesso parcial           |
-| AC-016b | RoomBookingServiceTest    | bulkAdjacentAllowed_AC016b                                | bulk, positivo                  |
-| AC-017  | RoomBookingServiceTest    | bulkPartialSuccess_AC017                                  | bulk, sucesso parcial           |
-| AC-018  | RoomBookingSecurityTest   | otherCollaboratorCannotEdit_AC018                         | negativo, runAs                 |
-| AC-019  | RoomBookingSecurityTest   | collaboratorSeesOthersBookings_AC019                      | positivo, runAs                 |
-| AC-021  | RoomBookingSecurityTest   | adminEditsAnyBooking_AC021                                | positivo, runAs                 |
-| AC-022  | RoomBookingSecurityTest   | userWithoutAccessDenied_AC022                             | negativo, runAs                 |
-| AC-032  | RoomBookingSecurityTest   | organizerDeletesOwnOnly_AC032                             | positivo + negativo, runAs      |
-| AC-033  | RoomBookingSecurityTest   | adminDeletesAnyBooking_AC033                              | positivo, runAs                 |
-| AC-034  | MeetingRoomValidationTest | roomWithBookingsCannotBeDeleted_AC034                     | positivo + negativo, runAs      |
-| AC-038  | RoomBookingServiceTest    | restoreIntoTakenSlotRejected_AC038                        | negativo, runAs                 |
-| AC-039  | RoomBookingServiceTest    | restoreCancelledBookingAllowed_AC039                      | positivo, runAs                 |
-| REQ-013 | RoomBookingServiceTest    | blankRequiredFieldDoesNotBreakBatch_REQ013                | bulk, negativo                  |
-| REQ-012 | RoomBookingServiceTest    | bulkUpdateRejectedKeepsSavedSlot_REQ012                   | bulk update, sucesso parcial    |
-| REQ-012 | RoomBookingServiceTest    | bulkUpdateBlankFieldKeepsSavedSlot_REQ012                 | bulk update, campo vazio        |
-| REQ-012 | RoomBookingServiceTest    | bulkUpdateSwapSlots_REQ012                                | bulk update, positivo           |
-| REQ-010 | RoomBookingServiceTest    | roomOrAttendeeChangeRevalidates_REQ010                    | negativo                        |
-| REQ-021 | RoomBookingServiceTest    | reactivatePastBookingRejected_REQ021                      | negativo                        |
-| REQ-003 | RoomBookingServiceTest    | insertWithoutStatusDefaultsToActive_REQ003                | positivo                        |
-| REQ-025 | RoomBookingServiceTest    | bulkSameSlotWorstCase_REQ025                              | bulk 200, pior caso             |
-| REQ-020 | BookingSettingsTest       | readsDefaultRecord, missingRecordThrowsClearError         | positivo + negativo             |
-| —       | TriggerHandlerTest        | 4 métodos (roteamento, defaults, bypass, fora de trigger) | cobertura do framework          |
+| AC             | Classe de teste           | Método                                                                                                | Tipo                            |
+| -------------- | ------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
+| AC-001         | MeetingRoomValidationTest | adminCreatesActiveRoom_AC001                                                                          | positivo, runAs                 |
+| AC-002         | MeetingRoomValidationTest | zeroCapacityRejected_AC002                                                                            | negativo                        |
+| AC-023         | MeetingRoomValidationTest | closingBeforeOpeningRejected_AC023                                                                    | negativo                        |
+| AC-020         | MeetingRoomValidationTest | collaboratorCannotEditRoom_AC020                                                                      | negativo, runAs                 |
+| AC-003         | RoomBookingServiceTest    | collaboratorBooksFreeSlot_AC003                                                                       | positivo, runAs                 |
+| AC-004         | RoomBookingServiceTest    | endBeforeStartRejected_AC004                                                                          | negativo                        |
+| AC-005         | RoomBookingServiceTest    | overlappingBookingRejected_AC005                                                                      | negativo                        |
+| AC-006         | RoomBookingServiceTest    | sameSlotOtherRoomAllowed_AC006                                                                        | positivo                        |
+| AC-007         | RoomBookingServiceTest    | adjacentBookingAllowed_AC007                                                                          | positivo                        |
+| AC-007b        | RoomBookingServiceTest    | containedBookingRejected_AC007b                                                                       | negativo                        |
+| AC-008         | RoomBookingServiceTest    | overCapacityRejected_AC008                                                                            | negativo                        |
+| AC-009         | RoomBookingServiceTest    | afterClosingRejected_AC009                                                                            | negativo                        |
+| AC-009b        | RoomBookingServiceTest    | weekendRejected_AC009b                                                                                | negativo                        |
+| AC-009d        | RoomBookingServiceTest    | exactOpeningHoursAllowed_AC009d                                                                       | positivo                        |
+| AC-031         | RoomBookingServiceTest    | openingHoursUseBookerTimeZone_AC031                                                                   | positivo + negativo, runAs      |
+| AC-010         | RoomBookingServiceTest    | inactiveRoomRejected_AC010                                                                            | negativo                        |
+| AC-011         | RoomBookingServiceTest    | durationLimitsEnforced_AC011                                                                          | negativo + limites              |
+| AC-024         | RoomBookingServiceTest    | pastStartRejected_AC024                                                                               | negativo                        |
+| AC-025         | RoomBookingServiceTest    | tooFarAheadRejected_AC025                                                                             | negativo                        |
+| AC-026         | RoomBookingServiceTest    | subjectEditOnStartedBookingAllowed_AC026                                                              | positivo                        |
+| AC-027         | RoomBookingServiceTest    | configurableMaxDuration_AC027                                                                         | positivo                        |
+| AC-012         | RoomBookingServiceTest    | extendWithoutSelfConflict_AC012                                                                       | positivo                        |
+| AC-013         | RoomBookingServiceTest    | extendIntoNextBookingRejected_AC013                                                                   | negativo                        |
+| AC-014         | RoomBookingServiceTest    | cancelStampsAndFreesSlot_AC014                                                                        | positivo                        |
+| AC-028         | RoomBookingServiceTest    | reactivateWhenFree_AC028                                                                              | positivo                        |
+| AC-029         | RoomBookingServiceTest    | reactivateIntoConflictRejected_AC029                                                                  | negativo                        |
+| AC-015         | RoomBookingServiceTest    | bulkInsert200Valid_AC015                                                                              | bulk                            |
+| AC-035         | RoomBookingServiceTest    | bulkFirstInBatchWins_AC035                                                                            | bulk, negativo, sucesso parcial |
+| AC-036         | RoomBookingServiceTest    | bulkRejectedDoesNotBlockNext_AC036                                                                    | bulk, sucesso parcial           |
+| AC-037         | RoomBookingServiceTest    | bulkInvalidDoesNotBlockNext_AC037                                                                     | bulk, sucesso parcial           |
+| AC-016b        | RoomBookingServiceTest    | bulkAdjacentAllowed_AC016b                                                                            | bulk, positivo                  |
+| AC-017         | RoomBookingServiceTest    | bulkPartialSuccess_AC017                                                                              | bulk, sucesso parcial           |
+| AC-018         | RoomBookingSecurityTest   | otherCollaboratorCannotEdit_AC018                                                                     | negativo, runAs                 |
+| AC-019         | RoomBookingSecurityTest   | collaboratorSeesOthersBookings_AC019                                                                  | positivo, runAs                 |
+| AC-040, AC-041 | — (não testável em Apex)  | Verificação na org: `SELECT DeveloperName FROM ListView WHERE SobjectType IN (...)` + abertura da aba | configuração                    |
+| AC-021         | RoomBookingSecurityTest   | adminEditsAnyBooking_AC021                                                                            | positivo, runAs                 |
+| AC-022         | RoomBookingSecurityTest   | userWithoutAccessDenied_AC022                                                                         | negativo, runAs                 |
+| AC-032         | RoomBookingSecurityTest   | organizerDeletesOwnOnly_AC032                                                                         | positivo + negativo, runAs      |
+| AC-033         | RoomBookingSecurityTest   | adminDeletesAnyBooking_AC033                                                                          | positivo, runAs                 |
+| AC-034         | MeetingRoomValidationTest | roomWithBookingsCannotBeDeleted_AC034                                                                 | positivo + negativo, runAs      |
+| AC-038         | RoomBookingServiceTest    | restoreIntoTakenSlotRejected_AC038                                                                    | negativo, runAs                 |
+| AC-039         | RoomBookingServiceTest    | restoreCancelledBookingAllowed_AC039                                                                  | positivo, runAs                 |
+| REQ-013        | RoomBookingServiceTest    | blankRequiredFieldDoesNotBreakBatch_REQ013                                                            | bulk, negativo                  |
+| REQ-012        | RoomBookingServiceTest    | bulkUpdateRejectedKeepsSavedSlot_REQ012                                                               | bulk update, sucesso parcial    |
+| REQ-012        | RoomBookingServiceTest    | bulkUpdateBlankFieldKeepsSavedSlot_REQ012                                                             | bulk update, campo vazio        |
+| REQ-012        | RoomBookingServiceTest    | bulkUpdateSwapSlots_REQ012                                                                            | bulk update, positivo           |
+| REQ-010        | RoomBookingServiceTest    | roomOrAttendeeChangeRevalidates_REQ010                                                                | negativo                        |
+| REQ-021        | RoomBookingServiceTest    | reactivatePastBookingRejected_REQ021                                                                  | negativo                        |
+| REQ-003        | RoomBookingServiceTest    | insertWithoutStatusDefaultsToActive_REQ003                                                            | positivo                        |
+| REQ-025        | RoomBookingServiceTest    | bulkSameSlotWorstCase_REQ025                                                                          | bulk 200, pior caso             |
+| REQ-020        | BookingSettingsTest       | readsDefaultRecord, missingRecordThrowsClearError                                                     | positivo + negativo             |
+| —              | TriggerHandlerTest        | 4 métodos (roteamento, defaults, bypass, fora de trigger)                                             | cobertura do framework          |
 
 AC-009c foi substituído por AC-009d (`exactOpeningHoursAllowed_AC009d`) —
 aprovado pelo usuário em 2026-11-26.
