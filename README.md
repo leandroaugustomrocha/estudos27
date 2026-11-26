@@ -76,11 +76,28 @@ force-app/main/default/   Metadata do Salesforce (objetos, Apex, triggers, LWC, 
 specs/                    Uma pasta por funcionalidade: spec.md, plan.md, tasks.md
 agent_docs/               Regras de negócio, segurança, padrões de engenharia e produtividade
 .claude/rules/            Convenções por tipo de arquivo (Apex, LWC, Flows, geral)
+.claude/agents/           Revisores automáticos de Apex e LWC (somente leitura)
+.claude/commands/         Comandos /review-apex, /review-flow, /gen-test, /deploy-check, /debug-log
 .claude/settings.json     Hook que bloqueia commit se lint ou testes LWC falharem
 scripts/apex/             Scripts de Apex anônimo (inclui a massa de dados da spec 001)
 CLAUDE.md                 Processo SDD e princípios (lido pelo Claude Code)
 AGENTS.md                 Contexto do projeto, stack e comandos (compartilhado entre agentes)
 ```
+
+### Ferramentas de revisão (Claude Code)
+
+| Ferramenta      | Tipo    | O que faz                                                                                                                        |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `apex-reviewer` | Agente  | Revisa Apex e triggers contra as regras do projeto (limites, bulk, segurança, framework de trigger, testes). Só lê, nunca edita. |
+| `lwc-reviewer`  | Agente  | Revisa componentes LWC (LDS × Apex, tratamento de erro, segurança, SLDS/acessibilidade, testes Jest). Só lê, nunca edita.        |
+| `/review-apex`  | Comando | Code review de Apex com tabela por severidade (Crítico / Alerta / Melhoria).                                                     |
+| `/review-flow`  | Comando | Auditoria de Flows: DML/SOQL em loop, fault connectors, recursão.                                                                |
+| `/gen-test`     | Comando | Gera classe de teste Apex com `@TestSetup`, cenários positivo/negativo e carga de 200+.                                          |
+| `/deploy-check` | Comando | Verificação de pré-deploy: git, dry-run e testes.                                                                                |
+| `/debug-log`    | Comando | Analisa logs de Apex: exceções, governor limits e recursão.                                                                      |
+
+Na spec 001, o `apex-reviewer` e o `/review-apex` encontraram problemas reais que foram
+corrigidos antes do deploy (registrados no `tasks.md`).
 
 ## Como rodar
 
