@@ -79,6 +79,10 @@
       sobrescrito com constante `HANDLER_NAME`; `ORDER BY` desnecessário
       removido; bypass nos testes em `try/finally`; 3 riscos aceitos
       documentados no plan. Dry-run 55/55, cobertura ≥ 99,6%
+- [x] T24 Deploy do commit `56a9ee1` (confirmado pelo usuário) → 2026-11-26:
+      sucesso, 55/55 testes na org, cobertura ≥ 99,6%; conferido na org que
+      `RoomBookingTriggerHandler` tem `HANDLER_NAME` e o selector não tem
+      `ORDER BY`
 
 ## Componentes do deploy escopado
 
