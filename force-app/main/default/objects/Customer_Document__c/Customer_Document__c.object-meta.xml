@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >CPF/CNPJ of a Customer__c (spec 002). Private sharing: only the record owner (who registered the customer) and admins with View All see it (REQ-022). Written only by CustomerDocumentService after validation; users have read-only access.</description>
+    <enableActivities>false</enableActivities>
+    <enableHistory>false</enableHistory>
+    <enableReports>true</enableReports>
+    <enableSearch>false</enableSearch>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Documento do cliente</label>
+    <nameField>
+        <displayFormat>DOC-{000000}</displayFormat>
+        <label>Número do registro</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Documentos de clientes</pluralLabel>
+    <sharingModel>Private</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>

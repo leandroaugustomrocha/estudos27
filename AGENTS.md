@@ -1,101 +1,64 @@
-# Project Context
+# AGENTS.md — Constituição do projeto estudos27
 
-`estudos27` is Leandro's personal Salesforce study project: a single Developer
-Edition org where all Apex, LWC and Flow learning exercises are centralized.
-There is no production org and no team — but code must still follow
-enterprise-grade Salesforce best practices, because it doubles as practice
-for real client work.
+Fonte única de verdade para Claude Code, Kiro e Agentforce Vibes.
+Este arquivo é carregado em TODA interação: manter curto. Processo detalhado
+fica em `CLAUDE.md` (Claude Code) e `.kiro/steering/sdd-process.md` (Kiro).
 
-# Stack
+- Org única: alias `estudos27` (Developer Edition). Nunca usar outra org.
+- `sourceApiVersion`: 68.0.
+- Responder em português do Brasil; código, comentários e nomes de API em inglês.
+- Regras detalhadas de código: `agent_docs/` e `.claude/rules/`
+  (`apex.md`, `lwc.md`, `flows.md`, `general.md`). Em conflito, perguntar.
+- `agent_docs/security.md` é leitura obrigatória antes de qualquer trabalho com
+  `@AuraEnabled`, SOQL, DML ou sharing.
 
-- Salesforce Platform — Developer Edition org, alias `estudos27`
-- Salesforce DX project, `sourceApiVersion` 68.0 (Winter '27)
-- Apex (classes + triggers), Lightning Web Components, Aura (legacy only), Flows
-- Salesforce CLI (`sf`), Node/npm for tooling
-- Jest via `@salesforce/sfdx-lwc-jest` 7, ESLint 9 (`@salesforce/eslint-config-lwc`),
-  Prettier 3 + `prettier-plugin-apex`, Husky 9 + lint-staged (pre-commit)
+## Constituição (princípios inegociáveis)
 
-# Commands
+Todo plano técnico (`plan.md` no Claude Code, `design.md` no Kiro) começa com
+um "Constitution Check" que confirma cada item ou justifica a exceção.
+Alterar a Constituição exige pedido explícito do usuário.
 
-```
-# Install tooling
-npm install
+### Apex
 
-# Lint (LWC/Aura JS)
-npm run lint
+1. **`with sharing` por padrão.** `without sharing` só com justificativa em
+   comentário na classe e no plano. Utilitárias sem contexto: `inherited sharing`.
+2. **Trigger Handler, camadas sob demanda.** Um trigger por objeto
+   (`<Object>Trigger`), sem lógica, delegando para `<Object>TriggerHandler`
+   (com bypass). Criar `<Domain>Service` só quando houver lógica reutilizada
+   ou que envolva mais de um objeto; criar `<Object>Selector` só quando a mesma
+   query for usada em mais de um lugar. Caso contrário, a lógica fica no handler.
+   Se o service/selector do objeto já existe, usar e estender o existente.
+3. **Nunca SOQL ou DML dentro de loops.** Bulkificar com `Set<Id>`,
+   `Map<Id, SObject>` e DML em lista.
+4. **CRUD/FLS em toda query e DML.** `WITH USER_MODE` e `AccessLevel.USER_MODE`;
+   senão `Security.stripInaccessible()`. Exceção exige justificativa no código e
+   no plano.
+5. **Todo Apex tem teste** (`<ClassName>Test`, `@IsTest`): dados em `@TestSetup`
+   ou `TestDataFactory` (nunca `SeeAllData=true`); `Assert.*` sempre com
+   mensagem; `Test.startTest()`/`stopTest()`; cenários positivo, negativo,
+   bulk (200+) e `System.runAs` para o que a spec cobre.
 
-# Format check / fix
-npm run prettier:verify
-npm run prettier
+### Plataforma
 
-# LWC unit tests (Jest)
-npm test
-npm run test:unit:coverage
-npm test -- force-app/main/default/lwc/myComponent   # single component
-npm test -- -t "test name"                           # single test by name
+6. **Declarativo antes de código; uma regra tem um só dono.** Nunca Flow e
+   trigger disputando a mesma regra no mesmo objeto.
+7. **Reusar antes de criar.** Procurar objeto, campo, classe, LWC ou Flow
+   existente antes de criar algo novo.
+8. **Sem valores mágicos.** Sem IDs fixos; textos de usuário em Custom Labels;
+   Record Types por `DeveloperName`; Custom Metadata só para o que a spec diz
+   que precisa ser configurável.
+9. **Acesso por Permission Set**, nunca Profile. Todo objeto/campo/classe novo
+   entra num Permission Set na mesma entrega.
+10. **Rastreabilidade.** REQ → AC → task → teste → commit. Nada sem REQ;
+    nenhum REQ sem teste.
 
-# Apex tests in the org (with coverage)
-sf apex run test --target-org estudos27 --code-coverage --result-format human --wait 10
-sf apex run test --target-org estudos27 --class-names MyClassTest --code-coverage --result-format human --wait 10
-sf apex run test --target-org estudos27 --tests MyClassTest.myMethod --result-format human --wait 10
+## Disciplina de escopo
 
-# Validate a deploy without saving (dry run)
-sf project deploy start --source-dir force-app --target-org estudos27 --dry-run
-
-# Deploy / retrieve
-sf project deploy start --source-dir force-app --target-org estudos27
-sf project retrieve start --source-dir force-app --target-org estudos27
-```
-
-# File Structure
-
-```
-force-app/main/default/
-  classes/        Apex classes + test classes (*Test.cls)
-  triggers/       One trigger per object, logic-free
-  lwc/            Lightning Web Components (+ __tests__/ for Jest)
-  aura/           Legacy Aura — do not create new Aura components
-  flows/          Flows (created when first Flow is retrieved)
-  objects/        Custom objects/fields metadata
-  permissionsets/ Access is granted via permission sets, not profiles
-config/           Scratch org definition (not used day-to-day)
-manifest/         package.xml for targeted retrieve/deploy
-scripts/apex/     Anonymous Apex snippets   scripts/soql/  SOQL snippets
-agent_docs/       Deeper context for AI agents (see below)
-.claude/rules/    Path-scoped conventions (Apex, LWC, Flow)
-```
-
-# Workflow Rules
-
-- **Spec first, then code.** Before writing any code: read the relevant existing
-  files, then present a short spec (goal, objects/fields, classes/components to
-  create or change, test plan, risks). Wait for approval, then implement.
-- Only ever target the org alias `estudos27`. Never deploy, retrieve or run
-  commands against any other org.
-- Never delete metadata (files or in the org) without asking first.
-- Every Apex change ships with its test class; run Apex tests before calling a
-  task done. Minimum 75% coverage per class, with real assertions.
-- After LWC/JS changes run `npm run lint` and `npm test`.
-- Run a `--dry-run` deploy before a real deploy.
-- Fix bugs test-first: reproduce with a failing test, then fix.
-- When editing Apex, LWC or Flows, follow the matching file in `.claude/rules/`
-  (`apex.md`, `lwc.md`, `flows.md`).
-
-# Deeper Context (read when relevant)
-
-- Non-negotiable rules for this codebase: `agent_docs/business-rules.md`
-- Salesforce security practices: `agent_docs/security.md`
-- Engineering standards and quality philosophy: `agent_docs/engineering-standards.md`
-- Productivity tools and workflows: `agent_docs/productivity.md`
-
-# Keeping This File Current
-
-This is a living system. If you hit something during real work that should be
-a permanent rule — a convention, a security constraint, a mistake worth never
-repeating — don't apply it silently: ask whether it should be added, and add
-it to the right file (not dumped into this one).
-
-# Response Language
-
-Always respond in Brazilian Portuguese, regardless of the language used in the
-prompt. Code, comments and these config files stay in English.
+- Implementar somente o que está na spec aprovada. Melhoria fora dela vira
+  sugestão no final, não código.
+- Não inventar regra de negócio: marcar `[DÚVIDA]` e perguntar uma por vez.
+- Antes de usar objeto, campo, classe ou método, confirmar que existe em
+  `force-app/` ou na org (somente leitura). Nunca inventar API names.
+- Deploy sempre escopado aos componentes do plano, primeiro com `--dry-run`.
+  Deploy real só com confirmação explícita. Nunca deletar metadata sem confirmação.
+- Código que não cumpre a Constituição não está pronto, mesmo compilando.

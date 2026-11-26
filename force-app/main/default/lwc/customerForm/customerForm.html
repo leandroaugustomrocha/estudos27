@@ -1,0 +1,141 @@
+<template>
+  <lightning-card>
+    <h2 slot="title" class="slds-card__header-title" data-id="title">
+      {title}
+    </h2>
+    <div class="slds-p-horizontal_medium">
+      <template lwc:if={isSearching}>
+        <lightning-spinner
+          alternative-text={labels.searching}
+          size="small"
+        ></lightning-spinner>
+      </template>
+
+      <div class="slds-grid slds-wrap slds-gutters">
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+          <lightning-input
+            data-field="Name"
+            label={fieldLabels.Name}
+            value={customer.Name}
+            required
+            onchange={handleChange}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+          <lightning-input
+            data-field="Document_Input__c"
+            label={fieldLabels.Document_Input__c}
+            value={customer.Document_Input__c}
+            placeholder={documentPlaceholder}
+            field-level-help={documentHelp}
+            required={isNew}
+            onchange={handleChange}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+          <lightning-input
+            data-field="Email__c"
+            type="email"
+            message-when-type-mismatch={labels.invalidEmail}
+            label={fieldLabels.Email__c}
+            value={customer.Email__c}
+            onchange={handleChange}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+          <lightning-input
+            data-field="Phone__c"
+            type="tel"
+            label={fieldLabels.Phone__c}
+            value={customer.Phone__c}
+            onchange={handleChange}
+          ></lightning-input>
+        </div>
+
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+          <lightning-input
+            data-field="Postal_Code__c"
+            label={fieldLabels.Postal_Code__c}
+            value={customer.Postal_Code__c}
+            onchange={handlePostalCodeChange}
+            onblur={handlePostalCodeBlur}
+          ></lightning-input>
+          <div
+            class="slds-assistive-text"
+            data-id="postal-code-error"
+            aria-live="assertive"
+          >
+            {postalCodeError}
+          </div>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3">
+          <lightning-input
+            data-field="Street__c"
+            label={fieldLabels.Street__c}
+            value={customer.Street__c}
+            onchange={handleChange}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+          <lightning-input
+            data-field="Address_Number__c"
+            label={fieldLabels.Address_Number__c}
+            value={customer.Address_Number__c}
+            onchange={handleChange}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-3">
+          <lightning-input
+            data-field="Address_Complement__c"
+            label={fieldLabels.Address_Complement__c}
+            value={customer.Address_Complement__c}
+            onchange={handleChange}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+          <lightning-input
+            data-field="District__c"
+            label={fieldLabels.District__c}
+            value={customer.District__c}
+            onchange={handleChange}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+          <lightning-input
+            data-field="City__c"
+            label={fieldLabels.City__c}
+            value={customer.City__c}
+            disabled={cityAndStateLocked}
+            onchange={handleChange}
+          ></lightning-input>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+          <lightning-combobox
+            data-field="State__c"
+            label={fieldLabels.State__c}
+            value={customer.State__c}
+            options={stateOptions}
+            disabled={cityAndStateLocked}
+            onchange={handleChange}
+          ></lightning-combobox>
+        </div>
+      </div>
+    </div>
+
+    <div slot="footer" class="slds-text-align_right">
+      <lightning-button
+        data-id="cancel"
+        label={labels.cancel}
+        onclick={handleCancel}
+        class="slds-m-right_x-small"
+      ></lightning-button>
+      <lightning-button
+        data-id="save"
+        variant="brand"
+        label={labels.save}
+        disabled={saveDisabled}
+        onclick={handleSave}
+      ></lightning-button>
+    </div>
+  </lightning-card>
+</template>

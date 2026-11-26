@@ -1,6 +1,182 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
     <labels>
+        <fullName>Customer_Document_Save_Failed</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer: document could not be saved for a reason other than duplicity</shortDescription>
+        <value>Não foi possível gravar o CPF/CNPJ. Tente de novo.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Invalid_Data</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer form: no customer data received</shortDescription>
+        <value>Dados do cliente inválidos.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Load_Error_Title</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer form: title of the toast when the customer cannot be loaded</shortDescription>
+        <value>Não foi possível carregar o cliente</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Cancel</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Customer form: cancel button</shortDescription>
+        <value>Cancelar</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Document_Kept_Help</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer form: help on the document field when editing</shortDescription>
+        <value>Deixe em branco para manter o CPF/CNPJ atual.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Form_Title_Edit</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer form: title when editing (REQ-026)</shortDescription>
+        <value>Editar cliente</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Form_Title_New</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer form: title when creating (REQ-026)</shortDescription>
+        <value>Novo cliente</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Save</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Customer form: save button</shortDescription>
+        <value>Salvar</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Save_Error_Title</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer form: title of the error toast</shortDescription>
+        <value>Não foi possível salvar o cliente</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Saved</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Customer form: success toast</shortDescription>
+        <value>Cliente salvo.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Searching_Postal_Code</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer form: spinner while looking up the postal code</shortDescription>
+        <value>Buscando endereço pelo CEP...</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Cep_Service_Unavailable</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer: postal code service down (REQ-007)</shortDescription>
+        <value
+    >Não foi possível consultar o CEP agora. Preencha o endereço manualmente ou tente de novo.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Document_Required</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer: CPF/CNPJ missing (REQ-017)</shortDescription>
+        <value>Informe o CPF ou CNPJ do cliente.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Duplicate_Document</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer: CPF/CNPJ already used (REQ-016, REQ-021)</shortDescription>
+        <value>Já existe um cliente com este CPF/CNPJ.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Invalid_Document</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer: CPF/CNPJ check digits (REQ-015)</shortDescription>
+        <value>CPF/CNPJ inválido.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Invalid_Email</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Customer: invalid e-mail (REQ-012)</shortDescription>
+        <value>Informe um e-mail válido.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Invalid_Phone</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Customer: invalid phone (REQ-013)</shortDescription>
+        <value>Informe um telefone com DDD (10 ou 11 dígitos).</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Invalid_Postal_Code</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer: postal code format (REQ-005)</shortDescription>
+        <value>Informe um CEP com 8 dígitos.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Postal_Code_Not_Found</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer: postal code does not exist (REQ-006)</shortDescription>
+        <value>CEP não encontrado. Confira o número digitado.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Postal_Code_Removed_Note</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer: note when import postal code is removed (REQ-024)</shortDescription>
+        <value>CEP {0} removido em {1}: CEP não encontrado.</value>
+    </labels>
+    <labels>
         <fullName>Room_Booking_Batch_Conflict</fullName>
         <categories>RoomBooking</categories>
         <language>en_US</language>

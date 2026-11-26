@@ -7,20 +7,15 @@ verdade e o código é a implementação dela. Nenhuma linha de Apex, LWC, Flow 
 metadata é escrita antes de existir uma spec aprovada (salvo as exceções da
 seção 2).
 
-- Org única: alias `estudos27` (Developer Edition). **Nunca** usar outra org,
-  mesmo que esteja autenticada no CLI.
-- `sourceApiVersion`: 68.0 (ver `sfdx-project.json`).
-- Responder em **português do Brasil**; código, comentários, nomes de API,
-  classes, métodos e variáveis em **inglês**.
-- Este arquivo define o **processo** e os **princípios**. O padrão de código
-  detalhado está em `AGENTS.md`, `agent_docs/` e `.claude/rules/`
-  (`apex.md`, `lwc.md`, `flows.md`, `general.md`). Em conflito, perguntar
-  antes de seguir.
+- Org, idioma, versão de API e a **Constituição** (princípios inegociáveis)
+  estão em `AGENTS.md`, importado acima e compartilhado com Kiro e Agentforce
+  Vibes. Regras de código compartilhadas vão lá, não aqui.
+- Este arquivo define o **processo** SDD no Claude Code. O equivalente para o
+  Kiro está em `.kiro/steering/sdd-process.md`; os dois devem continuar
+  coerentes (mudou o processo aqui, atualizar lá).
 
 ### Específico do Claude Code
 
-- `AGENTS.md` (importado acima) é a fonte única de verdade compartilhada com o
-  Agentforce Vibes. Regras de código compartilhadas vão lá, não aqui.
 - Carregar contexto sob demanda: `agent_docs/business-rules.md` é sempre
   relevante; ler `agent_docs/security.md` em qualquer trabalho com
   `@AuraEnabled`, SOQL, DML ou sharing.
@@ -32,50 +27,11 @@ seção 2).
 
 ---
 
-## 1. Constituição (princípios inegociáveis)
+## 1. Constituição
 
-Valem em toda fase e em toda geração ou alteração de código. Todo `plan.md`
-tem um "Constitution Check" que confirma cada item ou justifica a exceção.
-
-### 1.1 Regras permanentes de Apex
-
-1. **`with sharing` por padrão.** `without sharing` só quando estritamente
-   necessário, com justificativa em comentário na classe **e** no `plan.md`.
-   Classes utilitárias sem contexto próprio usam `inherited sharing`.
-2. **Padrão Trigger Handler.** Um único trigger por objeto (`<Object>Trigger`),
-   cobrindo todos os eventos e **sem lógica** — só delega para
-   `<Object>TriggerHandler`, que encaminha para services (`<Domain>Service`) e
-   selectors (`<Object>Selector`). O handler tem mecanismo de bypass.
-3. **Nunca SOQL ou DML dentro de loops.** Bulkificar com `Set<Id>`,
-   `Map<Id, SObject>` e DML em lista, fora de qualquer `for`/`while`.
-4. **CRUD/FLS em toda query e DML.** `WITH USER_MODE` no SOQL e
-   `AccessLevel.USER_MODE` no `Database.*`; quando não for possível,
-   `Security.stripInaccessible()`. Exceção (ex.: `SYSTEM_MODE` em processo de
-   sistema) exige justificativa no código e no `plan.md`.
-5. **Todo Apex vem com classe de teste** (`<ClassName>Test`, `@IsTest`) que:
-   - cria dados em `@TestSetup` (ou `TestDataFactory`), nunca `SeeAllData=true`;
-   - usa asserts descritivos da classe `System.Assert` (`Assert.areEqual`,
-     `Assert.isTrue`…) **sempre com mensagem**;
-   - inclui teste de carga com **200+ registros**, além de positivo, negativo
-     e `System.runAs` (usuário sem permissão);
-   - envolve a chamada testada em `Test.startTest()` / `Test.stopTest()`.
-
-### 1.2 Princípios de plataforma
-
-6. **Declarativo antes de código, mas uma regra tem um só dono.** Preferir
-   configuração/Flow quando resolve; nunca Flow e trigger disputando a mesma
-   regra no mesmo objeto.
-7. **Reusar antes de criar.** Nada de objeto, campo, classe, LWC ou Flow novo
-   sem antes procurar algo existente que possa ser estendido.
-8. **Sem valores mágicos.** Nada de IDs fixos; configuração em Custom Metadata,
-   textos de usuário em Custom Labels, Record Types por `DeveloperName`.
-9. **Acesso por Permission Set**, nunca por Profile. Todo objeto/campo/classe
-   novo entra em um Permission Set na mesma entrega.
-10. **Rastreabilidade ponta a ponta.** REQ → AC → task → teste → commit. Nada
-    é implementado sem REQ; nenhum REQ fica sem teste.
-
-Código que não cumpre a Constituição não está pronto, mesmo que compile e os
-testes passem. Alterar a Constituição exige pedido explícito do usuário.
+Definida em `AGENTS.md` (princípios 1 a 10 e disciplina de escopo). Vale em
+toda fase. Todo `plan.md` começa com um "Constitution Check" que confirma cada
+princípio ou justifica a exceção.
 
 ---
 
@@ -216,9 +172,11 @@ Boas práticas da spec:
 - IDs são estáveis: nunca renumerar. REQ removido vira `~~REQ-004~~
 (substituído em AAAA-MM-DD por REQ-007)`.
 - Todo REQ tem ao menos um AC; todo AC aponta para um REQ.
-- Cobrir sempre os **caminhos de erro**: sem permissão, campo vazio, dado
-  inválido, registro duplicado, callout falhando, operação em massa (200),
-  usuário sem acesso ao registro (sharing).
+- **Avaliar** os caminhos de erro (sem permissão, campo vazio, dado inválido,
+  registro duplicado, callout falhando, operação em massa de 200, usuário sem
+  acesso ao registro) e virar REQ só os que se aplicam a esta entrega. Os que
+  não se aplicam vão para "Fora de escopo" ou viram `[DÚVIDA]` — nunca REQ
+  por precaução.
 - "Fora de escopo" é obrigatório — é o que segura o escopo.
 - Spec só é aprovada sem `[DÚVIDA]` aberta.
 

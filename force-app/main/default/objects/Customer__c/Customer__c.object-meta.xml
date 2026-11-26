@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description
+  >Customer with Brazilian address filled from the postal code (spec 002-customer-cep-lookup). The CPF/CNPJ is NOT stored here: it lives in Customer_Document__c (private). Document_Input__c is a pass-through field cleared by CustomerTrigger.</description>
+    <enableActivities>false</enableActivities>
+    <enableHistory>false</enableHistory>
+    <enableReports>true</enableReports>
+    <enableSearch>true</enableSearch>
+    <externalSharingModel>Private</externalSharingModel>
+    <label>Cliente</label>
+    <nameField>
+        <label>Nome</label>
+        <type>Text</type>
+    </nameField>
+    <pluralLabel>Clientes</pluralLabel>
+    <sharingModel>Read</sharingModel>
+    <visibility>Public</visibility>
+</CustomObject>
