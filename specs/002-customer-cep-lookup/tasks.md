@@ -102,4 +102,7 @@ sharing`); decisão do usuário: Modify All no documento para o admin, com campo
 - [x] T29 Deploy real (confirmado pelo usuário) → 2026-11-26: sucesso, 52/52 testes
       Apex na org, cobertura 93,2%–100%; conferido na org: `CustomerTrigger` ativo,
       LWC `customerForm` e Named Credential `ViaCep` presentes. Busca real no ViaCEP pela
-      org ainda não executada (usuário sem Permission Set de cliente)
+      org (pedido do usuário, com `Customer_Admin` atribuído a ele): `CustomerController.lookupCep`
+      via Apex anônimo → 01310-100 FOUND (Avenida Paulista, Bela Vista, São Paulo/SP, 113 ms),
+      20040-020 FOUND (Praça Pio X, Centro, Rio de Janeiro/RJ, 29 ms), 99999-999 NOT_FOUND
+      (40 ms)
