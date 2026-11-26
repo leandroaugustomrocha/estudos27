@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <classAccesses>
+        <apexClass>CustomerController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <description
   >Customer user persona (spec 002): sees all customers, edits and deletes own; reads only the CPF/CNPJ of own customers (Private sharing); documents are written only by CustomerDocumentService.</description>
     <externalCredentialPrincipalAccesses>

@@ -130,8 +130,13 @@ nem selector). Documento repetido no lote: o primeiro vence.
   próprios); FLS de edição nos campos do cliente, exceto `Person_Type__c` (leitura);
   `Customer_Document__c` só Read (`Document_Number__c`, `Customer__c`); classe
   `CustomerController`; principal `ViaCep-ViaCepPrincipal`.
-- **Customer_Admin:** igual + View All/Modify All em `Customer__c` e View All (leitura) em
-  `Customer_Document__c`.
+- **Customer_Admin:** igual + View All/Modify All em `Customer__c` e **Modify All** em
+  `Customer_Document__c` com permissão de campo **só leitura** (decisão do usuário em
+  2026-11-26, na Fase C): o `SYSTEM_MODE` ignora permissões de objeto e campo, mas não o
+  compartilhamento da classe `with sharing`; sem Modify All, o trigger não conseguia
+  excluir, restaurar ou trocar o documento de clientes de outros quando o admin age. Com
+  campo só leitura, o admin não altera o número direto, mas pode excluir um registro de
+  documento direto (ver Riscos).
 - Usuário sem Permission Set: negado (REQ-011).
 - `@AuraEnabled`: valida o CEP (8 dígitos) antes do callout; `AuraHandledException` com
   texto seguro; `cacheable=true` só em `lookupCep` e `getDocument`.
@@ -183,11 +188,12 @@ confirmação, ou retirar os Permission Sets.
 
 ## Riscos
 
-| Risco                                                                   | Prob.   | Mitigação                                                                    |
-| ----------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------- |
-| External Credential sem autenticação                                    | Ocorreu | Resolvido na T01 com `Custom` + principal                                    |
-| "Novo" padrão sem busca na hora                                         | Ocorreu | REQ-026: segue o REQ-008 (decisão do usuário)                                |
-| Corrida na duplicidade (dois salvamentos simultâneos)                   | Baixa   | Índice único barra; mensagem da plataforma pode citar o Id — residual aceito |
-| Documento entre before e after insert depende da ordem do `Trigger.new` | Baixa   | Ordem garantida pela plataforma; teste de sucesso parcial cobre a reexecução |
-| ViaCEP lento em importações grandes                                     | Média   | Um callout por CEP distinto, lotes de 20, falha = `UNAVAILABLE`              |
-| `Document_Input__c` em logs de depuração                                | Baixa   | Logs só do admin; campo limpo antes de gravar                                |
+| Risco                                                                                           | Prob.   | Mitigação                                                                                                           |
+| ----------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| External Credential sem autenticação                                                            | Ocorreu | Resolvido na T01 com `Custom` + principal                                                                           |
+| "Novo" padrão sem busca na hora                                                                 | Ocorreu | REQ-026: segue o REQ-008 (decisão do usuário)                                                                       |
+| Corrida na duplicidade (dois salvamentos simultâneos)                                           | Baixa   | Índice único barra; mensagem da plataforma pode citar o Id — residual aceito                                        |
+| Admin exclui um registro de documento direto (API/Data Loader), deixando o cliente sem CPF/CNPJ | Baixa   | Aceito pelo usuário junto com o Modify All; o número em si não pode ser alterado direto (campo só leitura, testado) |
+| Documento entre before e after insert depende da ordem do `Trigger.new`                         | Baixa   | Ordem garantida pela plataforma; teste de sucesso parcial cobre a reexecução                                        |
+| ViaCEP lento em importações grandes                                                             | Média   | Um callout por CEP distinto, lotes de 20, falha = `UNAVAILABLE`                                                     |
+| `Document_Input__c` em logs de depuração                                                        | Baixa   | Logs só do admin; campo limpo antes de gravar                                                                       |

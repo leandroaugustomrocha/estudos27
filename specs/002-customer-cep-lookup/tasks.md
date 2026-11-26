@@ -40,27 +40,35 @@
 
 ## Fase B — Testes (devem falhar)
 
-- [ ] T11 `CustomerTestDataFactory` e `ViaCepCalloutMock`
-- [ ] T12 [AC-014, 015] `DocumentValidatorTest` (vetor oficial do CNPJ alfanumérico)
-- [ ] T13 [AC-001, 002, 012–017, 022, 023, 026, 031, 032] `CustomerServiceTest`
-- [ ] T14 [AC-008–011, 025] `CustomerSecurityTest`
-- [ ] T15 [AC-003, 005–007] `ViaCepCalloutTest` + `CustomerControllerTest`
-- [ ] T16 [AC-021, 027, 028, 030] `CustomerAddressLookupJobTest`
+- [x] T11 `CustomerTestDataFactory` e `ViaCepCalloutMock`
+- [x] T12 [AC-014, 015] `DocumentValidatorTest` (vetor oficial do CNPJ alfanumérico)
+- [x] T13 [AC-001, 002, 012–017, 022, 023, 026, 031, 032] `CustomerServiceTest`
+- [x] T14 [AC-008–011, 025] `CustomerSecurityTest`
+- [x] T15 [AC-003, 005–007] `ViaCepCalloutTest` + `CustomerControllerTest`
+- [x] T16 [AC-021, 027, 028, 030] `CustomerAddressLookupJobTest`
 - [ ] T17 [AC-003–007, 018–020, 029] Jest de `customerForm`
-- [ ] T18 Dry-run com testes → vermelho esperado
+- [x] T18 Dry-run com testes → 2026-11-26: vermelho como esperado, 36 de 44 testes Apex
+      falharam por asserção. Esqueletos (só assinaturas) de `DocumentValidator`,
+      `ViaCepCallout`, `CustomerController` e `CustomerAddressLookupJob` criados para os
+      testes compilarem. Passaram só os que dependem de compartilhamento/permissão já
+      existentes na metadata. Jest (T17) fica junto com o LWC (T25)
 
 ## Fase C — Implementação
 
-- [ ] T19 `DocumentValidator`
-- [ ] T20 `ViaCepCallout` (constante `TIMEOUT_MS = 120000`)
-- [ ] T21 `CustomerService` (validações, documento em `SYSTEM_MODE`, exclusão e
+- [x] T19 `DocumentValidator`
+- [x] T20 `ViaCepCallout` (constante `TIMEOUT_MS = 120000`)
+- [x] T21 `CustomerService` (validações, documento em `SYSTEM_MODE`, exclusão e
       restauração) + `CustomerDocumentDuplicateChecker` (without sharing)
-- [ ] T22 `CustomerTriggerHandler` + `CustomerTrigger`
-- [ ] T23 `CustomerAddressLookupJob` (constante `BATCH_SIZE = 20`)
-- [ ] T24 `CustomerController` + acesso à classe nos Permission Sets
+- [x] T22 `CustomerTriggerHandler` + `CustomerTrigger`
+- [x] T23 `CustomerAddressLookupJob` (constante `BATCH_SIZE = 20`)
+- [x] T24 `CustomerController` + acesso à classe nos Permission Sets
 - [ ] T25 [REQ-026] LWC `customerForm` + aba "Novo cliente" + ação "Editar cliente";
       remover o "Editar" padrão das ações da página
-- [ ] T26 Dry-run com testes + lint + Jest → verde, cobertura ≥ 90%
+- [ ] T26 Dry-run com testes + lint + Jest → verde, cobertura ≥ 90%. Apex em 2026-11-26:
+      46/46, cobertura 93,2%–100%. Durante a T21 o admin não conseguia mexer no documento
+      de clientes de outros (`SYSTEM_MODE` respeita o compartilhamento de classe `with
+  sharing`); decisão do usuário: Modify All no documento para o admin, com campos só
+      leitura (plan atualizado, 2 testes novos). Falta o LWC (T17, T25)
 
 ## Fase D — Qualidade e entrega
 
