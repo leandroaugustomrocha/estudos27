@@ -26,7 +26,9 @@
 - [x] T04 [REQ-001, 002, 012–014, 018, 023, 024] `Customer__c` + campos, aba, layout e
       list view "Todos os clientes"
 - [x] T05 [REQ-014–016, 022] `Customer_Document__c` (Private) + campos
-- [x] T06 [NFR] `Cep_Lookup_Setting__mdt` + registro `Default` (120 s / 20)
+- [x] ~~T06 [NFR] `Cep_Lookup_Setting__mdt` + registro `Default` (120 s / 20)~~ →
+      removido em 2026-11-26 pela revisão do plan (princípio 8 do `AGENTS.md`); os
+      arquivos nunca foram implantados
 - [x] T07 [REQ-003] External Credential + Named Credential `ViaCep` (resultado da T01)
 - [x] T08 Custom Labels das mensagens
 - [x] T09 [REQ-009–011, 022] Permission Sets `Customer_User` e `Customer_Admin` (incluindo
@@ -34,34 +36,34 @@
 - [x] T10 Dry-run da Fase A → 2026-11-26: sucesso (inclui acesso ao principal
       `ViaCep-ViaCepPrincipal` nos Permission Sets). Acesso à classe `CustomerController`
       fica para a T24, quando a classe existir
+- [x] T10b Dry-run da Fase A sem o Custom Metadata → 2026-11-26: sucesso
 
 ## Fase B — Testes (devem falhar)
 
-- [ ] T11 `CustomerTestDataFactory` e `ViaCepHttpMock`
-- [ ] T12 [AC-014, 015] `DocumentValidatorTest`
-- [ ] T13 [AC-001, 002, 012–017, 022, 023, 026] `CustomerServiceTest`
-- [ ] T14 [AC-008–011, 025] `CustomerSecurityTest` + `CustomerDocumentServiceTest`
-- [ ] T15 [AC-003, 005–007] `ViaCepClientTest` + `CustomerControllerTest`
-- [ ] T16 [AC-021, 027, 028] `CustomerAddressLookupJobTest`
-- [ ] T17 [AC-003–007, 018–020] Jest de `customerForm`
+- [ ] T11 `CustomerTestDataFactory` e `ViaCepCalloutMock`
+- [ ] T12 [AC-014, 015] `DocumentValidatorTest` (vetor oficial do CNPJ alfanumérico)
+- [ ] T13 [AC-001, 002, 012–017, 022, 023, 026, 031, 032] `CustomerServiceTest`
+- [ ] T14 [AC-008–011, 025] `CustomerSecurityTest`
+- [ ] T15 [AC-003, 005–007] `ViaCepCalloutTest` + `CustomerControllerTest`
+- [ ] T16 [AC-021, 027, 028, 030] `CustomerAddressLookupJobTest`
+- [ ] T17 [AC-003–007, 018–020, 029] Jest de `customerForm`
 - [ ] T18 Dry-run com testes → vermelho esperado
 
 ## Fase C — Implementação
 
 - [ ] T19 `DocumentValidator`
-- [ ] T20 `CepLookupSettings` + `ViaCepClient`
-- [ ] T21 `CustomerService`, `CustomerDocumentService`, `CustomerDocumentDuplicateChecker`,
-      `CustomerSelector`
+- [ ] T20 `ViaCepCallout` (constante `TIMEOUT_MS = 120000`)
+- [ ] T21 `CustomerService` (validações, documento em `SYSTEM_MODE`, exclusão e
+      restauração) + `CustomerDocumentDuplicateChecker` (without sharing)
 - [ ] T22 `CustomerTriggerHandler` + `CustomerTrigger`
-- [ ] T23 `CustomerAddressLookupJob`
-- [ ] T24 `CustomerController`
+- [ ] T23 `CustomerAddressLookupJob` (constante `BATCH_SIZE = 20`)
+- [ ] T24 `CustomerController` + acesso à classe nos Permission Sets
 - [ ] T25 [REQ-026] LWC `customerForm` + aba "Novo cliente" + ação "Editar cliente";
       remover o "Editar" padrão das ações da página
 - [ ] T26 Dry-run com testes + lint + Jest → verde, cobertura ≥ 90%
 
 ## Fase D — Qualidade e entrega
 
-- [ ] T27 Revisão (`apex-reviewer`, `lwc-reviewer`, `/review-apex` — disponíveis depois do
-      merge do PR #7) e correções
+- [ ] T27 Revisão (`apex-reviewer`, `lwc-reviewer`, `/review-apex`) e correções
 - [ ] T28 Verificação final (CLAUDE.md seção 9) e atualização de spec/plan/tasks
 - [ ] T29 Deploy real — **somente após confirmação do usuário**

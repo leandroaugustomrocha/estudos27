@@ -127,6 +127,15 @@ fora do padrão do projeto).
   manter o primeiro e rejeitar os seguintes com a mensagem "Já existe um cliente com este
   CPF/CNPJ."
 
+### Exclusão e restauração
+
+- REQ-027: QUANDO um cliente for excluído, O SISTEMA DEVE excluir também o CPF/CNPJ dele,
+  de modo que o documento possa ser usado num novo cadastro (REQ-016).
+- REQ-028: QUANDO um cliente for restaurado da Lixeira, O SISTEMA DEVE restaurar o CPF/CNPJ
+  dele junto; SE, nesse meio-tempo, outro cliente tiver sido cadastrado com o mesmo
+  documento, ENTÃO O SISTEMA DEVE negar a restauração com a mensagem "Já existe um cliente
+  com este CPF/CNPJ."
+
 ## Critérios de aceite (Given/When/Then)
 
 - AC-001 (REQ-001): Dado um usuário com permissão de cadastro, quando cria um cliente com
@@ -193,6 +202,12 @@ fora do padrão do projeto).
 - AC-023 (REQ-021): Dado um lote em que dois clientes têm o CPF `529.982.247-25`, quando é
   importado permitindo sucesso parcial, então o primeiro é salvo e o segundo recebe "Já
   existe um cliente com este CPF/CNPJ."
+- AC-031 (REQ-027): Dado um cliente com CPF `529.982.247-25` que foi excluído, quando um
+  novo cliente é cadastrado com esse CPF, então o cadastro é aceito.
+- AC-032 (REQ-028): Dado um cliente excluído com CPF `529.982.247-25`, quando é restaurado
+  da Lixeira, então volta com o CPF; dado que outro cliente foi cadastrado com esse CPF
+  enquanto ele estava na Lixeira, então a restauração é negada com "Já existe um cliente
+  com este CPF/CNPJ."
 - AC-008 (REQ-009): Dado um cliente cadastrado pelo usuário A, quando o usuário B
   consulta os clientes, então vê o cliente de A.
 - AC-009 (REQ-009): Dado um cliente cadastrado pelo usuário A, quando o usuário B tenta
@@ -277,3 +292,4 @@ Nenhuma dúvida em aberto.
 | 2026-11-26 | Busca até 120 s; CPF/CNPJ visível só ao dono e ao administrador (REQ-022, AC-025); CEP em branco sempre permitido (REQ-023, AC-026); CEP inexistente em importação é apagado e registrado (REQ-008 revisto, REQ-024, REQ-025, AC-024 substituído por AC-027 e AC-028) | Respostas do usuário à revisão da spec                                               |
 | 2026-11-26 | Spec aprovada                                                                                                                                                                                                                                                         | Aprovação do usuário                                                                 |
 | 2026-11-26 | REQ-026 (tela de cadastro por aba e ação; "Editar" padrão removido); REQ-008 inclui o botão padrão "Novo"; AC-029, AC-030                                                                                                                                             | Verificação T02 do plan: LWC não pode substituir New/Edit padrão; decisão do usuário |
+| 2026-11-26 | REQ-027 (excluir cliente exclui o documento) e REQ-028 (restaurar cliente restaura o documento, salvo duplicidade); AC-031, AC-032                                                                                                                                    | Revisão do plan pela Constituição nova: regra não estava na spec; decisão do usuário |
