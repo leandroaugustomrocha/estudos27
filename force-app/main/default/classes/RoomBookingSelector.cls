@@ -24,7 +24,6 @@ public with sharing class RoomBookingSelector {
         AND End_Date_Time__c > :windowStart
         AND Id NOT IN :excludedIds
       WITH USER_MODE
-      ORDER BY Start_Date_Time__c
     ];
   }
 }

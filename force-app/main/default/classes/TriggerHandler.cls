@@ -113,8 +113,11 @@ public inherited sharing virtual class TriggerHandler {
   ) {
   }
 
-  /** Concrete class name, e.g. "RoomBookingTriggerHandler" (String.valueOf returns "Name:[...]"). */
-  private String getHandlerName() {
+  /**
+   * Name used by bypass(). Concrete handlers should override it with a constant: the default
+   * derives it from String.valueOf(this), which serializes every member of the handler.
+   */
+  protected virtual String getHandlerName() {
     return String.valueOf(this).substringBefore(':');
   }
 }

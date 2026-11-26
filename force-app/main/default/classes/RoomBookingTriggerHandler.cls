@@ -1,9 +1,15 @@
 /**
  * Routes Room_Booking__c trigger events to RoomBookingService (spec 001).
- * Bypass with TriggerHandler.bypass('RoomBookingTriggerHandler').
+ * Bypass with TriggerHandler.bypass(RoomBookingTriggerHandler.HANDLER_NAME).
  */
 public with sharing class RoomBookingTriggerHandler extends TriggerHandler {
+  public static final String HANDLER_NAME = 'RoomBookingTriggerHandler';
+
   private final RoomBookingService service = new RoomBookingService();
+
+  protected override String getHandlerName() {
+    return HANDLER_NAME;
+  }
 
   protected override void beforeInsert(List<SObject> newRecords) {
     process((List<Room_Booking__c>) newRecords, null);

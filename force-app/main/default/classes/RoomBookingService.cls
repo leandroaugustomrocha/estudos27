@@ -57,6 +57,8 @@ public with sharing class RoomBookingService {
       Room_Booking__c old = oldMap == null ? null : oldMap.get(booking.Id);
       if (hasMissingRequiredFields(booking)) {
         // Platform required-field validation reports it after the before trigger (API/Apex loads).
+        // The update will fail, so its saved version keeps occupying its slot.
+        addSavedVersionIfActive(old, stillOccupied);
         continue;
       }
       if (!needsValidation(booking, old)) {

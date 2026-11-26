@@ -73,6 +73,12 @@
 - [x] T22 Deploy real (confirmado pelo usuário) → 2026-11-26: sucesso, 54/54
       testes na org, cobertura ≥ 99,6%; `Meeting_Room_Admin` atribuído ao
       usuário da org (pedido do usuário)
+- [x] T23 Code review (skill `review-apex`) e correções → 2026-11-26: update
+      que deixa campo obrigatório vazio mantém o horário salvo ocupado (+ teste
+      `bulkUpdateBlankFieldKeepsSavedSlot_REQ012`); `getHandlerName()`
+      sobrescrito com constante `HANDLER_NAME`; `ORDER BY` desnecessário
+      removido; bypass nos testes em `try/finally`; 3 riscos aceitos
+      documentados no plan. Dry-run 55/55, cobertura ≥ 99,6%
 
 ## Componentes do deploy escopado
 

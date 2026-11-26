@@ -484,9 +484,12 @@ private class RoomBookingServiceTest {
         Datetime.now().addMinutes(30),
         5
       );
-      TriggerHandler.bypass('RoomBookingTriggerHandler');
-      insert started;
-      TriggerHandler.clearBypass('RoomBookingTriggerHandler');
+      TriggerHandler.bypass(RoomBookingTriggerHandler.HANDLER_NAME);
+      try {
+        insert started;
+      } finally {
+        TriggerHandler.clearBypass(RoomBookingTriggerHandler.HANDLER_NAME);
+      }
 
       Test.startTest();
       result = save(
@@ -1010,9 +1013,12 @@ private class RoomBookingServiceTest {
         5
       );
       started.Status__c = 'Cancelled';
-      TriggerHandler.bypass('RoomBookingTriggerHandler');
-      insert started;
-      TriggerHandler.clearBypass('RoomBookingTriggerHandler');
+      TriggerHandler.bypass(RoomBookingTriggerHandler.HANDLER_NAME);
+      try {
+        insert started;
+      } finally {
+        TriggerHandler.clearBypass(RoomBookingTriggerHandler.HANDLER_NAME);
+      }
       Test.startTest();
       result = save(new Room_Booking__c(Id = started.Id, Status__c = 'Active'));
       Test.stopTest();
@@ -1165,6 +1171,35 @@ private class RoomBookingServiceTest {
       ]
       .Status__c,
       'Restored booking stays cancelled'
+    );
+  }
+
+  // REQ-012 / REQ-013 — an update that blanks a required field fails, so its saved slot stays taken
+  @IsTest
+  static void bulkUpdateBlankFieldKeepsSavedSlot_REQ012() {
+    Id blue = roomId(RoomBookingTestDataFactory.BLUE_ROOM);
+    List<Database.SaveResult> results;
+    System.runAs(collaboratorA()) {
+      Room_Booking__c x = booking(blue, monday(), 10, 0, 60);
+      Room_Booking__c y = booking(blue, monday(), 14, 0, 60);
+      insert new List<Room_Booking__c>{ x, y };
+      List<Room_Booking__c> updates = new List<Room_Booking__c>{
+        new Room_Booking__c(Id = x.Id, End_Date_Time__c = null),
+        new Room_Booking__c(
+          Id = y.Id,
+          Start_Date_Time__c = x.Start_Date_Time__c,
+          End_Date_Time__c = x.End_Date_Time__c
+        )
+      };
+      Test.startTest();
+      results = Database.update(updates, false, AccessLevel.USER_MODE);
+      Test.stopTest();
+    }
+    Assert.isFalse(results[0].isSuccess(), 'X with a blank End must fail');
+    assertRejected(
+      results[1],
+      CONFLICT_PREFIX + '10:00 às 11:00.',
+      'Y moved onto the slot X still holds'
     );
   }
 }
