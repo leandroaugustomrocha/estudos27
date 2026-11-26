@@ -31,9 +31,13 @@ npm run prettier
 # LWC unit tests (Jest)
 npm test
 npm run test:unit:coverage
+npm test -- force-app/main/default/lwc/myComponent   # single component
+npm test -- -t "test name"                           # single test by name
 
 # Apex tests in the org (with coverage)
 sf apex run test --target-org estudos27 --code-coverage --result-format human --wait 10
+sf apex run test --target-org estudos27 --class-names MyClassTest --code-coverage --result-format human --wait 10
+sf apex run test --target-org estudos27 --tests MyClassTest.myMethod --result-format human --wait 10
 
 # Validate a deploy without saving (dry run)
 sf project deploy start --source-dir force-app --target-org estudos27 --dry-run
