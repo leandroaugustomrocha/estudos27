@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Document_Input__c</fullName>
+    <description
+  >Pass-through input only: CustomerTrigger validates it, stores it in Customer_Document__c and clears it before save, so it is always blank in the database (REQ-017, REQ-022).</description>
+    <label>CPF/CNPJ</label>
+    <length>18</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

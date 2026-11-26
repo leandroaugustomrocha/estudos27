@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Customer__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description
+  >Customer that owns this document. Lookup (not master-detail) so the document keeps its own Private sharing.</description>
+    <label>Cliente</label>
+    <referenceTo>Customer__c</referenceTo>
+    <relationshipLabel>Documentos</relationshipLabel>
+    <relationshipName>Customer_Documents</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

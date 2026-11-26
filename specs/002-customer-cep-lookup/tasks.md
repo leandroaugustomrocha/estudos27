@@ -1,0 +1,67 @@
+# Tasks — 002 Cadastro de clientes com busca de CEP
+
+> Spec: [spec.md](spec.md) · Plan: [plan.md](plan.md)
+> Verificação padrão das tasks de código: deploy `--dry-run` escopado com
+> `--test-level RunSpecifiedTests`; para o LWC, `npm run lint && npm test`.
+
+## Fase 0 — Verificações do plan
+
+- [x] T01 [REQ-003] External Credential "sem autenticação" + Named Credential `ViaCep`:
+      dry-run; conferir o formato real das respostas do ViaCEP (encontrado, `erro`, 400)
+      → 2026-11-26: protocolo `NoAuthentication` **não suportado** na org; External
+      Credential `Custom` sem parâmetros + principal passou no dry-run. ViaCEP: encontrado =
+      HTTP 200 com `logradouro/bairro/localidade/uf`; não encontrado = HTTP 200
+      `{"erro": "true"}` (texto); CEP malformado = HTTP 400 (HTML)
+- [x] T02 [REQ-003] LWC pode substituir os botões padrão New/Edit? (dry-run de um override)
+      → 2026-11-26: **não** (`LightningWebComponent` não existe no enum; `LightningComponent`
+      só aceita Aura). Decisão do usuário: aba + ação com o LWC, "Editar" padrão removido,
+      "Novo" padrão segue o REQ-008. Spec: REQ-026, AC-029, AC-030
+- [x] T03 [REQ-014, 015] Conferir o cálculo do CNPJ alfanumérico contra exemplo publicado
+      → 2026-11-26: exemplo oficial da Receita `12.ABC.345/01DE-35` (valor = ASCII − 48,
+      módulo 11, pesos 2–9 da direita para a esquerda) conferido por script; mesmo
+      algoritmo valida CNPJ numérico; CPF `529.982.247-25` válido
+
+## Fase A — Metadata e acesso
+
+- [x] T04 [REQ-001, 002, 012–014, 018, 023, 024] `Customer__c` + campos, aba, layout e
+      list view "Todos os clientes"
+- [x] T05 [REQ-014–016, 022] `Customer_Document__c` (Private) + campos
+- [x] T06 [NFR] `Cep_Lookup_Setting__mdt` + registro `Default` (120 s / 20)
+- [x] T07 [REQ-003] External Credential + Named Credential `ViaCep` (resultado da T01)
+- [x] T08 Custom Labels das mensagens
+- [x] T09 [REQ-009–011, 022] Permission Sets `Customer_User` e `Customer_Admin` (incluindo
+      acesso ao principal `ViaCep-ViaCepPrincipal`)
+- [x] T10 Dry-run da Fase A → 2026-11-26: sucesso (inclui acesso ao principal
+      `ViaCep-ViaCepPrincipal` nos Permission Sets). Acesso à classe `CustomerController`
+      fica para a T24, quando a classe existir
+
+## Fase B — Testes (devem falhar)
+
+- [ ] T11 `CustomerTestDataFactory` e `ViaCepHttpMock`
+- [ ] T12 [AC-014, 015] `DocumentValidatorTest`
+- [ ] T13 [AC-001, 002, 012–017, 022, 023, 026] `CustomerServiceTest`
+- [ ] T14 [AC-008–011, 025] `CustomerSecurityTest` + `CustomerDocumentServiceTest`
+- [ ] T15 [AC-003, 005–007] `ViaCepClientTest` + `CustomerControllerTest`
+- [ ] T16 [AC-021, 027, 028] `CustomerAddressLookupJobTest`
+- [ ] T17 [AC-003–007, 018–020] Jest de `customerForm`
+- [ ] T18 Dry-run com testes → vermelho esperado
+
+## Fase C — Implementação
+
+- [ ] T19 `DocumentValidator`
+- [ ] T20 `CepLookupSettings` + `ViaCepClient`
+- [ ] T21 `CustomerService`, `CustomerDocumentService`, `CustomerDocumentDuplicateChecker`,
+      `CustomerSelector`
+- [ ] T22 `CustomerTriggerHandler` + `CustomerTrigger`
+- [ ] T23 `CustomerAddressLookupJob`
+- [ ] T24 `CustomerController`
+- [ ] T25 [REQ-026] LWC `customerForm` + aba "Novo cliente" + ação "Editar cliente";
+      remover o "Editar" padrão das ações da página
+- [ ] T26 Dry-run com testes + lint + Jest → verde, cobertura ≥ 90%
+
+## Fase D — Qualidade e entrega
+
+- [ ] T27 Revisão (`apex-reviewer`, `lwc-reviewer`, `/review-apex` — disponíveis depois do
+      merge do PR #7) e correções
+- [ ] T28 Verificação final (CLAUDE.md seção 9) e atualização de spec/plan/tasks
+- [ ] T29 Deploy real — **somente após confirmação do usuário**
