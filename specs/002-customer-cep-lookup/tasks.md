@@ -106,3 +106,16 @@ sharing`); decisão do usuário: Modify All no documento para o admin, com campo
       via Apex anônimo → 01310-100 FOUND (Avenida Paulista, Bela Vista, São Paulo/SP, 113 ms),
       20040-020 FOUND (Praça Pio X, Centro, Rio de Janeiro/RJ, 29 ms), 99999-999 NOT_FOUND
       (40 ms)
+
+## Validação depois da entrega (2026-11-26)
+
+- [x] T30 Massa de dados (`scripts/apex/seed-002-customers.apex`, PR #9) → 200 clientes
+      gravados como importação; `CustomerAddressLookupBatch` rodou na org real com o
+      ViaCEP: 10 blocos, 0 erros, cerca de 10 s. Conferido por consulta: 180 clientes com
+      CEP e endereço completo, cidade do arquivo mantida, 10 com CEP `99999-999` apagado e
+      observação gravada, 160 pessoas físicas, 40 jurídicas, 200 documentos
+- [x] T31 Teste manual das telas pelo usuário, com o roteiro de 10 passos (aba "Novo
+      cliente", ação "Editar cliente", lista "Todos os clientes") → tudo funcionou,
+      segundo o usuário. Não cobertos pelo roteiro manual (só pelos testes automáticos):
+      CPF/CNPJ escondido para outro usuário (REQ-022, requer um segundo usuário) e
+      serviço de CEP fora do ar (REQ-007)
