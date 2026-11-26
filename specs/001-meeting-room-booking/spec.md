@@ -1,6 +1,6 @@
 # 001 — Reserva de salas de reunião
 
-> Status: Implementada (2026-11-26) — deploy na estudos27 com 55/55 testes (commit 56a9ee1)
+> Status: Implementada (2026-11-26) — deploy na estudos27 com 55/55 testes + list views (AC-040, AC-041)
 > Nível: Padrão
 
 ## Objetivo
@@ -243,6 +243,14 @@ nem na org `estudos27`.
   negada.
 - AC-019 (REQ-014): Dada uma reserva do colaborador A, quando o colaborador B
   consulta as reservas da sala, então vê a reserva de A.
+- AC-040 (REQ-014): Dado um colaborador com acesso, quando abre a aba "Reservas
+  de sala", então pode escolher a lista "Todas as reservas", que mostra as
+  reservas de todos os organizadores com assunto, sala, início, fim,
+  participantes, situação e organizador.
+- AC-041 (REQ-001, REQ-014): Dado um colaborador com acesso, quando abre a aba
+  "Salas de reunião", então pode escolher a lista "Todas as salas", que mostra
+  todas as salas com nome, capacidade, horário de abertura e fechamento e se
+  está ativa.
 - AC-020 (REQ-015): Dado um colaborador, quando tenta criar ou alterar uma
   sala, então a operação é negada.
 - AC-021 (REQ-015): Dado um administrador de salas, quando edita ou cancela a
@@ -324,3 +332,4 @@ Nenhuma dúvida em aberto.
 | 2026-11-26 | REQ-018→REQ-025 (primeiro do lote tem preferência); REQ-022→REQ-023 (organizador exclui as próprias); REQ-024 (sala com reservas não é excluída); AC-030/AC-016 substituídos; AC-032 a AC-037 | Pedido do usuário na aprovação do plan          |
 | 2026-11-26 | REQ-026 (restaurar da Lixeira revalida as regras); AC-038, AC-039                                                                                                                             | Achado da revisão de código; decisão do usuário |
 | 2026-11-26 | AC-009c → AC-009d (aprovado pelo usuário)                                                                                                                                                     | AC-009c contradizia a duração máxima do REQ-009 |
+| 2026-11-26 | Bug: abas sem list view → AC-040, AC-041; status volta para "Em implementação"                                                                                                                | Relato do usuário; correção aprovada            |

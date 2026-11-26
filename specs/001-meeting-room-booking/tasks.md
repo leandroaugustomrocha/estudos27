@@ -104,3 +104,14 @@ force-app/main/default/classes/ TriggerHandler, BookingSettings, MeetingRoomSele
   RoomBookingTestDataFactory, MeetingRoomValidationTest, RoomBookingSecurityTest,
   RoomBookingServiceTest, TriggerHandlerTest, BookingSettingsTest (.cls + .cls-meta.xml)
 ```
+
+## Correção de bug — list views (2026-11-26)
+
+- [x] T25 [AC-040, AC-041] Bug relatado pelo usuário: abas sem list view
+      (deploy por metadata não cria a lista "Todos") → ACs na spec, list views
+      no plan
+- [x] T26 Criar `Meeting_Room__c.All` ("Todas as salas") e
+      `Room_Booking__c.All` ("Todas as reservas"), visíveis para todos
+- [x] T27 Dry-run e deploy (aprovados pelo usuário) → 55/55 testes; conferido
+      via REST na org: "Todas as salas" = 10 registros, "Todas as reservas" =
+      200 registros, com as colunas dos ACs
