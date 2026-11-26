@@ -74,6 +74,29 @@ sharing`); decisão do usuário: Modify All no documento para o admin, com campo
 
 ## Fase D — Qualidade e entrega
 
-- [ ] T27 Revisão (`apex-reviewer`, `lwc-reviewer`, `/review-apex`) e correções
-- [ ] T28 Verificação final (CLAUDE.md seção 9) e atualização de spec/plan/tasks
+- [x] T27 Revisão (`apex-reviewer`, `lwc-reviewer`) e correções → 2026-11-26:
+  - **Bloqueador (Apex):** Queueable encadeado para no limite de 5 da Developer Edition
+    (200 clientes = 10 execuções). Decisão do usuário: **Batch Apex**
+    (`CustomerAddressLookupBatch`, blocos de 20, sem encadeamento, adiados relançados
+    no `finish()` até 3 tentativas). Plan D-4 revisado
+  - **Apex, importantes:** CPF "tomado" por linha com outro erro no lote; chaves de
+    documento desalinhadas em nova tentativa de sucesso parcial (agora por Id nos updates
+    e conferência de tamanho nos inserts); restauração em lote com o mesmo CPF (o primeiro
+    vence, sem erro de plataforma); busca cortada pelo tempo tratada como "fora do ar"
+    (agora é adiada); `lookupCep` sem cache (plan Segurança revisado)
+  - **Apex, sugestões aplicadas:** logs quando a busca é pulada e quando a gravação do
+    Batch falha; falha de gravação do documento que não é duplicidade com mensagem
+    genérica; mensagem genérica para cliente nulo no controller. Não aplicada: o
+    verificador de duplicidade continua devolvendo o Id do cliente (todos já veem todos
+    os clientes, REQ-009)
+  - **LWC, importantes:** corrida entre buscas (resposta antiga descartada); nova
+    tentativa após "fora do ar"/"não encontrado"; CPF/CNPJ atualizado depois de editar
+    (`refreshApex`)
+  - **LWC, sugestões aplicadas:** falha da chamada tratada como "fora do ar"; Cancelar
+    descarta busca em andamento; registro carregado uma vez; título próprio para erro de
+    carga; erro do CEP no próprio campo (SLDS) e para leitores de tela; e-mail e telefone
+    com o tipo certo
+  - Testes novos: 3 Apex no service, 3 no Batch, 15 Jest. Resultado: Apex 52/52
+    (cobertura 93,2%–100%), Jest 26/26, lint limpo, dry-run do pacote completo: sucesso
+- [x] T28 Verificação final (CLAUDE.md seção 9) e atualização de spec/plan/tasks
 - [ ] T29 Deploy real — **somente após confirmação do usuário**

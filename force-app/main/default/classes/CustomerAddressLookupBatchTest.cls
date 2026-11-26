@@ -1,10 +1,11 @@
 /**
  * Spec 002: background postal code lookup for customers saved outside the form —
  * imports, integrations and the standard "New" button (REQ-008, REQ-024, REQ-025).
- * The job runs at Test.stopTest().
+ * Inserts inside Test.startTest() start the batch, which runs at Test.stopTest().
+ * In a test the batch may run a single execute(), so data stays within BATCH_SIZE.
  */
 @IsTest
-private class CustomerAddressLookupJobTest {
+private class CustomerAddressLookupBatchTest {
   @TestSetup
   static void setup() {
     CustomerTestDataFactory.createPersonaUsers();
@@ -32,6 +33,7 @@ private class CustomerAddressLookupJobTest {
   private static Customer__c reload(Id customerId) {
     return [
       SELECT
+        Id,
         Postal_Code__c,
         Street__c,
         District__c,
@@ -56,6 +58,32 @@ private class CustomerAddressLookupJobTest {
       'Imported customer saved right away: ' + result.getErrors()
     );
     return result.getId();
+  }
+
+  /** Inserts without starting the batch, to call execute() directly. */
+  private static List<Customer__c> insertWithoutLookup(
+    List<Customer__c> customers
+  ) {
+    System.runAs(userA()) {
+      TriggerHandler.bypass(CustomerTriggerHandler.HANDLER_NAME);
+      try {
+        insert customers;
+      } finally {
+        TriggerHandler.clearBypass(CustomerTriggerHandler.HANDLER_NAME);
+      }
+    }
+    return [
+      SELECT
+        Id,
+        Postal_Code__c,
+        Street__c,
+        District__c,
+        City__c,
+        State__c,
+        Address_Note__c
+      FROM Customer__c
+      WITH SYSTEM_MODE
+    ];
   }
 
   // AC-021, AC-030 / REQ-008 — import or standard "New": only empty fields are filled
@@ -136,13 +164,13 @@ private class CustomerAddressLookupJobTest {
     Assert.isNull(saved.Address_Note__c, 'No note when the service is down');
   }
 
-  // REQ-008 — one execution handles BATCH_SIZE customers, one callout per distinct postal code
+  // REQ-008 — a full block: one callout per distinct postal code
   @IsTest
-  static void processesOneBatchWithOneCalloutPerPostalCode_REQ008() {
+  static void fullBlockMakesOneCalloutPerPostalCode_REQ008() {
     ViaCepCalloutMock mock = new ViaCepCalloutMock();
     Test.setMock(HttpCalloutMock.class, mock);
     List<Customer__c> customers = new List<Customer__c>();
-    for (Integer i = 0; i < CustomerAddressLookupJob.BATCH_SIZE + 5; i++) {
+    for (Integer i = 0; i < CustomerAddressLookupBatch.BATCH_SIZE; i++) {
       customers.add(
         imported(
           'Lote ' + i,
@@ -157,21 +185,95 @@ private class CustomerAddressLookupJobTest {
       Database.insert(customers, false, AccessLevel.USER_MODE);
       Test.stopTest();
     }
-    Integer filled = [
-      SELECT COUNT()
-      FROM Customer__c
-      WHERE Street__c != NULL
-      WITH SYSTEM_MODE
-    ];
     Assert.areEqual(
-      CustomerAddressLookupJob.BATCH_SIZE,
-      filled,
-      'One execution processes exactly one batch'
+      CustomerAddressLookupBatch.BATCH_SIZE,
+      [
+        SELECT COUNT()
+        FROM Customer__c
+        WHERE Street__c != NULL
+        WITH SYSTEM_MODE
+      ],
+      'Every customer of the block gets its address'
     );
+    Assert.areEqual(2, mock.calls, 'One callout per distinct postal code');
+  }
+
+  // REQ-008 — no callout budget left: customers are postponed, not touched
+  @IsTest
+  static void postponesWhenBudgetRunsOut_REQ008() {
+    Test.setMock(HttpCalloutMock.class, new ViaCepCalloutMock());
+    List<Customer__c> customers = insertWithoutLookup(
+      new List<Customer__c>{
+        imported('A', 1, '01310-100', null),
+        imported('B', 2, '20040-020', null)
+      }
+    );
+    CustomerAddressLookupBatch batch = new CustomerAddressLookupBatch(
+      new Map<Id, Customer__c>(customers).keySet()
+    );
+    CustomerAddressLookupBatch.budgetMs = 0;
+    System.runAs(userA()) {
+      Test.startTest();
+      batch.execute(null, customers);
+      batch.finish(null);
+      Test.stopTest();
+    }
+    Assert.areEqual(2, batch.postponedIds.size(), 'Both customers postponed');
     Assert.areEqual(
-      2,
-      mock.calls,
-      'One callout per distinct postal code in the batch'
+      0,
+      [
+        SELECT COUNT()
+        FROM Customer__c
+        WHERE Street__c != NULL
+        WITH SYSTEM_MODE
+      ],
+      'Nothing written for postponed customers'
+    );
+  }
+
+  // REQ-025 — a lookup cut short by the remaining budget is postponed, not "service down"
+  @IsTest
+  static void lookupCutShortIsPostponed_REQ025() {
+    Test.setMock(
+      HttpCalloutMock.class,
+      new ViaCepCalloutMock(ViaCepCalloutMock.Behavior.CALLOUT_EXCEPTION)
+    );
+    List<Customer__c> customers = insertWithoutLookup(
+      new List<Customer__c>{ imported('A', 1, '01310-100', null) }
+    );
+    CustomerAddressLookupBatch batch = new CustomerAddressLookupBatch(
+      new Map<Id, Customer__c>(customers).keySet()
+    );
+    CustomerAddressLookupBatch.budgetMs = 5000;
+    System.runAs(userA()) {
+      Test.startTest();
+      batch.execute(null, customers);
+      Test.stopTest();
+    }
+    Assert.isTrue(
+      batch.postponedIds.contains(customers[0].Id),
+      'Timed-out lookup with a reduced timeout is retried later'
+    );
+  }
+
+  // REQ-025 — after MAX_ATTEMPTS the remaining customers stay as imported
+  @IsTest
+  static void givesUpAfterMaxAttempts_REQ025() {
+    List<Customer__c> customers = insertWithoutLookup(
+      new List<Customer__c>{ imported('A', 1, '01310-100', null) }
+    );
+    CustomerAddressLookupBatch lastAttempt = new CustomerAddressLookupBatch(
+      new Map<Id, Customer__c>(customers).keySet(),
+      CustomerAddressLookupBatch.MAX_ATTEMPTS
+    );
+    lastAttempt.postponedIds.add(customers[0].Id);
+    Test.startTest();
+    lastAttempt.finish(null);
+    Test.stopTest();
+    Assert.areEqual(
+      '01310-100',
+      reload(customers[0].Id).Postal_Code__c,
+      'Customer kept as imported'
     );
   }
 }

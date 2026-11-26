@@ -1,6 +1,33 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
     <labels>
+        <fullName>Customer_Document_Save_Failed</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer: document could not be saved for a reason other than duplicity</shortDescription>
+        <value>Não foi possível gravar o CPF/CNPJ. Tente de novo.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Invalid_Data</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer form: no customer data received</shortDescription>
+        <value>Dados do cliente inválidos.</value>
+    </labels>
+    <labels>
+        <fullName>Customer_Load_Error_Title</fullName>
+        <categories>Customer</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Customer form: title of the toast when the customer cannot be loaded</shortDescription>
+        <value>Não foi possível carregar o cliente</value>
+    </labels>
+    <labels>
         <fullName>Customer_Cancel</fullName>
         <categories>Customer</categories>
         <language>en_US</language>

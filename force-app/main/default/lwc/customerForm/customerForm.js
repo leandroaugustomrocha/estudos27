@@ -4,6 +4,7 @@ import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { CloseActionScreenEvent } from "lightning/actions";
 import { getRecord, notifyRecordUpdateAvailable } from "lightning/uiRecordApi";
 import { getObjectInfo, getPicklistValues } from "lightning/uiObjectInfoApi";
+import { refreshApex } from "@salesforce/apex";
 
 import CUSTOMER_OBJECT from "@salesforce/schema/Customer__c";
 import NAME_FIELD from "@salesforce/schema/Customer__c.Name";
@@ -27,8 +28,10 @@ import SAVE from "@salesforce/label/c.Customer_Save";
 import CANCEL from "@salesforce/label/c.Customer_Cancel";
 import SAVED from "@salesforce/label/c.Customer_Saved";
 import SAVE_ERROR_TITLE from "@salesforce/label/c.Customer_Save_Error_Title";
+import LOAD_ERROR_TITLE from "@salesforce/label/c.Customer_Load_Error_Title";
 import SEARCHING from "@salesforce/label/c.Customer_Searching_Postal_Code";
 import DOCUMENT_KEPT_HELP from "@salesforce/label/c.Customer_Document_Kept_Help";
+import INVALID_EMAIL from "@salesforce/label/c.Customer_Invalid_Email";
 import INVALID_POSTAL_CODE from "@salesforce/label/c.Customer_Invalid_Postal_Code";
 import POSTAL_CODE_NOT_FOUND from "@salesforce/label/c.Customer_Postal_Code_Not_Found";
 import SERVICE_UNAVAILABLE from "@salesforce/label/c.Customer_Cep_Service_Unavailable";
@@ -49,10 +52,15 @@ const EDITABLE_FIELDS = RECORD_FIELDS.map((f) => f.fieldApiName).concat([
   "Document_Input__c"
 ]);
 const POSTAL_CODE_LENGTH = 8;
+const FOUND = "FOUND";
+const NOT_FOUND = "NOT_FOUND";
+const UNAVAILABLE = "UNAVAILABLE";
 
 const onlyDigits = (value) => (value ?? "").replace(/\D/g, "");
+const emptyCustomer = () =>
+  Object.fromEntries(EDITABLE_FIELDS.map((name) => [name, null]));
 
-/** First readable message of an Apex or LDS error. */
+/** First readable message of an Apex or LDS error (body may be an object or an array). */
 const errorMessage = (error) => {
   const body = error?.body;
   if (Array.isArray(body)) {
@@ -75,10 +83,11 @@ export default class CustomerForm extends NavigationMixin(LightningElement) {
     save: SAVE,
     cancel: CANCEL,
     searching: SEARCHING,
-    documentKeptHelp: DOCUMENT_KEPT_HELP
+    documentKeptHelp: DOCUMENT_KEPT_HELP,
+    invalidEmail: INVALID_EMAIL
   };
 
-  customer = Object.fromEntries(EDITABLE_FIELDS.map((name) => [name, null]));
+  customer = emptyCustomer();
   isSearching = false;
   isSaving = false;
   postalCodeError;
@@ -86,7 +95,12 @@ export default class CustomerForm extends NavigationMixin(LightningElement) {
   serviceUnavailable = false;
   cityAndStateFromPostalCode = false;
   currentDocument;
-  lastLookedUpPostalCode;
+  /** Postal code (digits) whose address is currently in the form; only set on FOUND. */
+  foundPostalCode;
+  /** Incremented on every lookup and on cancel: answers of older lookups are discarded. */
+  lookupSequence = 0;
+  recordLoaded = false;
+  documentResult;
 
   @wire(getObjectInfo, { objectApiName: CUSTOMER_OBJECT })
   objectInfo;
@@ -99,23 +113,30 @@ export default class CustomerForm extends NavigationMixin(LightningElement) {
 
   @wire(getRecord, { recordId: "$recordId", fields: RECORD_FIELDS })
   wiredCustomer({ data, error }) {
-    if (data) {
-      const loaded = { Document_Input__c: null };
+    if (data && !this.recordLoaded) {
+      // Load once: later LDS emissions must not discard what the user is typing.
+      const loaded = emptyCustomer();
       RECORD_FIELDS.forEach((f) => {
         loaded[f.fieldApiName] = data.fields[f.fieldApiName]?.value ?? null;
       });
       this.customer = loaded;
-      this.lastLookedUpPostalCode = onlyDigits(loaded.Postal_Code__c);
+      this.foundPostalCode = onlyDigits(loaded.Postal_Code__c) || undefined;
       this.cityAndStateFromPostalCode = Boolean(loaded.Postal_Code__c);
+      this.recordLoaded = true;
     } else if (error) {
-      this.showToast("error", SAVE_ERROR_TITLE, errorMessage(error));
+      this.showToast("error", LOAD_ERROR_TITLE, errorMessage(error));
     }
   }
 
-  /** REQ-022: Apex returns the document only to whoever registered it and to admins. */
+  /**
+   * REQ-022: Apex returns the document only to whoever registered it and to admins.
+   * Errors are ignored on purpose: for anyone else the placeholder simply stays empty,
+   * and a message would reveal that the customer has a restricted document.
+   */
   @wire(getDocument, { customerId: "$recordId" })
-  wiredDocument({ data }) {
-    this.currentDocument = data ?? undefined;
+  wiredDocument(result) {
+    this.documentResult = result;
+    this.currentDocument = result?.data ?? undefined;
   }
 
   get defaultRecordTypeId() {
@@ -166,21 +187,29 @@ export default class CustomerForm extends NavigationMixin(LightningElement) {
     this.customer = { ...this.customer, [fieldName]: event.detail.value };
   }
 
-  /** REQ-003, REQ-019: lookup as soon as the postal code has 8 digits, without a button. */
+  /**
+   * REQ-003, REQ-019: look up as soon as the postal code has 8 digits, without a button.
+   * A postal code already resolved (FOUND) is not looked up again; after NOT_FOUND or
+   * UNAVAILABLE, typing it again retries (REQ-006, REQ-007 "tente de novo").
+   */
   handlePostalCodeChange(event) {
     const value = event.detail.value;
     this.customer = { ...this.customer, Postal_Code__c: value };
-    this.postalCodeError = undefined;
+    this.setPostalCodeError(undefined);
     this.postalCodeNotFound = false;
     const digits = onlyDigits(value);
-    if (
-      digits.length === POSTAL_CODE_LENGTH &&
-      digits !== this.lastLookedUpPostalCode
-    ) {
-      this.lookUp(digits);
-    } else if (digits.length === 0) {
+    if (digits.length === POSTAL_CODE_LENGTH) {
+      if (digits !== this.foundPostalCode) {
+        this.lookUp(digits);
+      }
+      return;
+    }
+    // Incomplete or blank: any lookup in flight is now stale.
+    this.lookupSequence++;
+    this.isSearching = false;
+    if (digits.length === 0) {
       this.cityAndStateFromPostalCode = false;
-      this.lastLookedUpPostalCode = undefined;
+      this.foundPostalCode = undefined;
     }
   }
 
@@ -188,24 +217,36 @@ export default class CustomerForm extends NavigationMixin(LightningElement) {
   handlePostalCodeBlur() {
     const digits = onlyDigits(this.customer.Postal_Code__c);
     if (digits.length > 0 && digits.length !== POSTAL_CODE_LENGTH) {
-      this.postalCodeError = INVALID_POSTAL_CODE;
+      this.setPostalCodeError(INVALID_POSTAL_CODE);
     }
   }
 
   async lookUp(digits) {
+    const sequence = ++this.lookupSequence;
     this.isSearching = true;
-    this.lastLookedUpPostalCode = digits;
+    let result;
     try {
-      this.applyLookup(await lookupCep({ postalCode: digits }));
+      result = await lookupCep({ postalCode: digits });
     } catch (error) {
-      this.postalCodeError = errorMessage(error);
-    } finally {
-      this.isSearching = false;
+      // Apex already maps service failures to UNAVAILABLE; a failure here is the
+      // browser-to-Salesforce call itself (network, expired session): same rule (REQ-007).
+      result =
+        errorMessage(error) === INVALID_POSTAL_CODE
+          ? { status: INVALID_POSTAL_CODE }
+          : { status: UNAVAILABLE };
     }
+    const stale =
+      sequence !== this.lookupSequence ||
+      onlyDigits(this.customer.Postal_Code__c) !== digits;
+    if (stale) {
+      return; // a newer lookup (or a cancel) owns the form now
+    }
+    this.isSearching = false;
+    this.applyLookup(digits, result);
   }
 
-  applyLookup(result) {
-    if (result?.status === "FOUND") {
+  applyLookup(digits, result) {
+    if (result?.status === FOUND) {
       // REQ-003: replace the address fields; number and complement are never touched (REQ-004).
       this.customer = {
         ...this.customer,
@@ -214,22 +255,40 @@ export default class CustomerForm extends NavigationMixin(LightningElement) {
         City__c: result.city ?? null,
         State__c: result.state ?? null
       };
+      this.foundPostalCode = digits;
       this.cityAndStateFromPostalCode = true;
       this.serviceUnavailable = false;
-    } else if (result?.status === "NOT_FOUND") {
+    } else if (result?.status === NOT_FOUND) {
       // REQ-006: saving stays blocked until the postal code is fixed.
+      this.foundPostalCode = undefined;
       this.postalCodeNotFound = true;
-      this.postalCodeError = POSTAL_CODE_NOT_FOUND;
       this.serviceUnavailable = false;
+      this.setPostalCodeError(POSTAL_CODE_NOT_FOUND);
+    } else if (result?.status === INVALID_POSTAL_CODE) {
+      this.setPostalCodeError(INVALID_POSTAL_CODE);
     } else {
       // REQ-007: free every address field for manual entry.
+      this.foundPostalCode = undefined;
       this.serviceUnavailable = true;
       this.cityAndStateFromPostalCode = false;
       this.showToast("warning", "", SERVICE_UNAVAILABLE);
     }
   }
 
+  /** Shows the message on the field itself (SLDS error state) and keeps it for screen readers. */
+  setPostalCodeError(message) {
+    this.postalCodeError = message;
+    const input = this.template.querySelector('[data-field="Postal_Code__c"]');
+    if (input) {
+      input.setCustomValidity(message ?? "");
+      input.reportValidity();
+    }
+  }
+
   async handleSave() {
+    if (this.saveDisabled) {
+      return;
+    }
     const inputs = [
       ...this.template.querySelectorAll("lightning-input, lightning-combobox")
     ];
@@ -237,7 +296,7 @@ export default class CustomerForm extends NavigationMixin(LightningElement) {
       (valid, input) => input.reportValidity() !== false && valid,
       true
     );
-    if (!allValid || this.postalCodeError || this.saveDisabled) {
+    if (!allValid || this.postalCodeError) {
       return;
     }
     this.isSaving = true;
@@ -250,6 +309,9 @@ export default class CustomerForm extends NavigationMixin(LightningElement) {
       this.showToast("success", "", SAVED);
       if (this.recordId) {
         await notifyRecordUpdateAvailable([{ recordId: this.recordId }]);
+        if (this.documentResult) {
+          await refreshApex(this.documentResult);
+        }
         this.dispatchEvent(new CloseActionScreenEvent());
       } else {
         this[NavigationMixin.Navigate]({
@@ -269,18 +331,18 @@ export default class CustomerForm extends NavigationMixin(LightningElement) {
   }
 
   handleCancel() {
+    this.lookupSequence++; // discard any lookup in flight
+    this.isSearching = false;
     if (this.recordId) {
       this.dispatchEvent(new CloseActionScreenEvent());
       return;
     }
-    this.customer = Object.fromEntries(
-      EDITABLE_FIELDS.map((name) => [name, null])
-    );
-    this.postalCodeError = undefined;
+    this.customer = emptyCustomer();
+    this.setPostalCodeError(undefined);
     this.postalCodeNotFound = false;
     this.serviceUnavailable = false;
     this.cityAndStateFromPostalCode = false;
-    this.lastLookedUpPostalCode = undefined;
+    this.foundPostalCode = undefined;
   }
 
   showToast(variant, title, message) {

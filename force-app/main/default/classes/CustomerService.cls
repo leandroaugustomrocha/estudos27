@@ -3,8 +3,8 @@
  *
  * Validates and formats contact data, postal code and CPF/CNPJ (REQ-002, 005, 012-017,
  * 020, 021, 023), keeps the document in the Private Customer_Document__c record (REQ-022),
- * deletes and restores it with the customer (REQ-027, REQ-028) and schedules the
- * background postal code lookup for customers saved outside the form (REQ-008).
+ * deletes and restores it with the customer (REQ-027, REQ-028) and starts the background
+ * postal code lookup for customers saved outside the form (REQ-008).
  *
  * Customer_Document__c is written in SYSTEM_MODE on purpose (plan 002, Constitution Check
  * item 4, user decision): users only read it, so it can never be written without going
@@ -17,12 +17,15 @@ public with sharing class CustomerService {
   private static final Pattern EMAIL_PATTERN = Pattern.compile(
     '^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$'
   );
+  private static final String DUPLICATE_VALUE = 'DUPLICATE_VALUE';
 
   /**
-   * Validated document keys of the last before-insert/update run, in Trigger.new order,
-   * read by the after trigger of the same run (null = no document change for that row).
+   * Validated document keys of the last before-save run, read by the after trigger of
+   * the same run. Updates are keyed by record Id; inserts (no Id yet) by Trigger.new
+   * position, which is only used when the after trigger sees the same number of rows.
    */
-  private static List<String> pendingDocumentKeys = new List<String>();
+  private static Map<Id, String> pendingKeysById = new Map<Id, String>();
+  private static List<String> pendingKeysByPosition = new List<String>();
 
   /** Key of the document read by the last readDocument call (null when none). */
   private String lastDocumentKey;
@@ -34,7 +37,8 @@ public with sharing class CustomerService {
     Map<Id, Customer__c> oldMap
   ) {
     Boolean isInsert = oldMap == null;
-    pendingDocumentKeys = new List<String>();
+    pendingKeysById = new Map<Id, String>();
+    pendingKeysByPosition = new List<String>();
     Set<String> batchKeys = new Set<String>();
 
     for (Customer__c customer : customers) {
@@ -45,25 +49,27 @@ public with sharing class CustomerService {
       if (error == null) {
         error = normalizePhone(customer);
       }
-      String key = null;
       String documentError = readDocument(customer, isInsert);
-      if (documentError == null && lastDocumentKey != null) {
-        key = lastDocumentKey;
-        if (batchKeys.contains(key)) {
-          documentError = System.Label.Customer_Duplicate_Document;
-          key = null;
-        } else {
-          batchKeys.add(key);
-        }
-      }
       if (error == null) {
         error = documentError;
       }
+      String key = null;
+      // REQ-021: only a row that will be saved can claim a document in the batch.
+      if (error == null && lastDocumentKey != null) {
+        if (batchKeys.contains(lastDocumentKey)) {
+          error = System.Label.Customer_Duplicate_Document;
+        } else {
+          batchKeys.add(lastDocumentKey);
+          key = lastDocumentKey;
+        }
+      }
       if (error != null) {
         customer.addError(error);
-        key = null;
       }
-      pendingDocumentKeys.add(key);
+      pendingKeysByPosition.add(key);
+      if (!isInsert && key != null) {
+        pendingKeysById.put(customer.Id, key);
+      }
     }
 
     rejectDocumentsUsedByOtherCustomers(customers);
@@ -75,8 +81,8 @@ public with sharing class CustomerService {
     List<Customer__c> customers,
     Map<Id, Customer__c> oldMap
   ) {
-    saveDocuments(customers);
-    scheduleBackgroundLookup(customers, oldMap);
+    saveDocuments(pendingKeysFor(customers, oldMap == null), customers);
+    startBackgroundLookup(customers, oldMap);
   }
 
   // ---------- before delete / after undelete ----------
@@ -95,7 +101,10 @@ public with sharing class CustomerService {
     }
   }
 
-  /** REQ-028: restore the document too, unless another customer took it meanwhile. */
+  /**
+   * REQ-028: restore the document too, unless another customer took it meanwhile or an
+   * earlier customer of the same restore already uses it (the first one wins).
+   */
   public void restoreDocuments(List<Customer__c> customers) {
     Map<Id, Customer__c> customersById = new Map<Id, Customer__c>(customers);
     List<Customer_Document__c> deletedDocuments = [
@@ -114,17 +123,32 @@ public with sharing class CustomerService {
     );
 
     List<Customer_Document__c> toRestore = new List<Customer_Document__c>();
+    Set<String> restoredKeys = new Set<String>();
     for (Customer_Document__c document : deletedDocuments) {
-      Id owner = usedBy.get(document.Document_Key__c.toUpperCase());
-      if (owner != null && owner != document.Customer__c) {
+      String key = document.Document_Key__c.toUpperCase();
+      Id owner = usedBy.get(key);
+      Boolean takenByAnother = owner != null && owner != document.Customer__c;
+      if (takenByAnother || restoredKeys.contains(key)) {
         customersById.get(document.Customer__c)
           .addError(System.Label.Customer_Duplicate_Document);
       } else {
+        restoredKeys.add(key);
         toRestore.add(document);
       }
     }
-    if (!toRestore.isEmpty()) {
-      Database.undelete(toRestore, true, AccessLevel.SYSTEM_MODE);
+    if (toRestore.isEmpty()) {
+      return;
+    }
+    List<Database.UndeleteResult> results = Database.undelete(
+      toRestore,
+      false,
+      AccessLevel.SYSTEM_MODE
+    );
+    for (Integer i = 0; i < results.size(); i++) {
+      if (!results[i].isSuccess()) {
+        customersById.get(toRestore[i].Customer__c)
+          .addError(messageFor(results[i].getErrors()));
+      }
     }
   }
 
@@ -200,7 +224,7 @@ public with sharing class CustomerService {
     List<Customer__c> customers
   ) {
     Set<String> keys = new Set<String>();
-    for (String key : pendingDocumentKeys) {
+    for (String key : pendingKeysByPosition) {
       if (key != null) {
         keys.add(key);
       }
@@ -209,29 +233,54 @@ public with sharing class CustomerService {
       keys
     );
     for (Integer i = 0; i < customers.size(); i++) {
-      String key = pendingDocumentKeys[i];
+      String key = pendingKeysByPosition[i];
       if (
         key != null &&
         usedBy.containsKey(key) &&
         usedBy.get(key) != customers[i].Id
       ) {
         customers[i].addError(System.Label.Customer_Duplicate_Document);
-        pendingDocumentKeys[i] = null;
+        pendingKeysByPosition[i] = null;
+        pendingKeysById.remove(customers[i].Id);
       }
     }
   }
 
   // ---------- documents and background lookup ----------
 
-  private void saveDocuments(List<Customer__c> customers) {
+  /**
+   * Customer Id -> validated key for the rows of this after trigger. When a row failed in
+   * the before trigger it is missing here and positions no longer match; that attempt is
+   * always rolled back by the platform, so nothing is written (the retry writes it).
+   */
+  private Map<Id, String> pendingKeysFor(
+    List<Customer__c> customers,
+    Boolean isInsert
+  ) {
     Map<Id, String> keyByCustomer = new Map<Id, String>();
-    for (
-      Integer i = 0; i < customers.size() && i < pendingDocumentKeys.size(); i++
-    ) {
-      if (pendingDocumentKeys[i] != null) {
-        keyByCustomer.put(customers[i].Id, pendingDocumentKeys[i]);
+    if (!isInsert) {
+      for (Customer__c customer : customers) {
+        if (pendingKeysById.containsKey(customer.Id)) {
+          keyByCustomer.put(customer.Id, pendingKeysById.get(customer.Id));
+        }
+      }
+      return keyByCustomer;
+    }
+    if (customers.size() != pendingKeysByPosition.size()) {
+      return keyByCustomer;
+    }
+    for (Integer i = 0; i < customers.size(); i++) {
+      if (pendingKeysByPosition[i] != null) {
+        keyByCustomer.put(customers[i].Id, pendingKeysByPosition[i]);
       }
     }
+    return keyByCustomer;
+  }
+
+  private void saveDocuments(
+    Map<Id, String> keyByCustomer,
+    List<Customer__c> customers
+  ) {
     if (keyByCustomer.isEmpty()) {
       return;
     }
@@ -245,7 +294,6 @@ public with sharing class CustomerService {
       documentByCustomer.put(existing.Customer__c, existing);
     }
     List<Customer_Document__c> documents = new List<Customer_Document__c>();
-    List<Id> customerOrder = new List<Id>();
     for (Id customerId : keyByCustomer.keySet()) {
       Customer_Document__c document = documentByCustomer.containsKey(customerId)
         ? documentByCustomer.get(customerId)
@@ -255,7 +303,6 @@ public with sharing class CustomerService {
         keyByCustomer.get(customerId)
       );
       documents.add(document);
-      customerOrder.add(customerId);
     }
     // Unique index on Document_Key__c is the last line of defense (two saves at the same time).
     List<Database.UpsertResult> results = Database.upsert(
@@ -266,21 +313,37 @@ public with sharing class CustomerService {
     Map<Id, Customer__c> customersById = new Map<Id, Customer__c>(customers);
     for (Integer i = 0; i < results.size(); i++) {
       if (!results[i].isSuccess()) {
-        customersById.get(customerOrder[i])
-          .addError(System.Label.Customer_Duplicate_Document);
+        Customer__c customer = customersById.get(documents[i].Customer__c);
+        if (customer != null) {
+          customer.addError(messageFor(results[i].getErrors()));
+        }
       }
     }
   }
 
+  /** Spec message for a duplicate; a safe generic message for anything else. */
+  private static String messageFor(List<Database.Error> errors) {
+    for (Database.Error error : errors) {
+      if (String.valueOf(error.getStatusCode()) == DUPLICATE_VALUE) {
+        return System.Label.Customer_Duplicate_Document;
+      }
+    }
+    System.debug(
+      LoggingLevel.ERROR,
+      'Customer document could not be saved: ' + errors
+    );
+    return System.Label.Customer_Document_Save_Failed;
+  }
+
   /** REQ-008: customers created, or with a new postal code, outside the form. */
-  private void scheduleBackgroundLookup(
+  private void startBackgroundLookup(
     List<Customer__c> customers,
     Map<Id, Customer__c> oldMap
   ) {
     if (skipBackgroundLookup) {
       return;
     }
-    List<Id> toLookUp = new List<Id>();
+    Set<Id> toLookUp = new Set<Id>();
     for (Customer__c customer : customers) {
       Customer__c old = oldMap == null ? null : oldMap.get(customer.Id);
       Boolean postalCodeIsNew =
@@ -290,12 +353,19 @@ public with sharing class CustomerService {
         toLookUp.add(customer.Id);
       }
     }
-    if (
-      !toLookUp.isEmpty() &&
-      Limits.getQueueableJobs() < Limits.getLimitQueueableJobs()
-    ) {
-      System.enqueueJob(new CustomerAddressLookupJob(toLookUp));
+    if (toLookUp.isEmpty()) {
+      return;
     }
+    // A batch cannot be started from inside another batch's execute().
+    if (System.isBatch()) {
+      System.debug(
+        LoggingLevel.WARN,
+        'Background address lookup skipped (saved from inside a batch) for customers: ' +
+        toLookUp
+      );
+      return;
+    }
+    CustomerAddressLookupBatch.run(toLookUp);
   }
 
   private static String digitsOf(String value) {

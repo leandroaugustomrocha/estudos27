@@ -17,7 +17,8 @@ public with sharing class CustomerController {
   }
 
   /** REQ-003, REQ-005: checks the format first, so a malformed CEP never reaches the service. */
-  @AuraEnabled(cacheable=true)
+  // Not cacheable: a service answer (e.g. UNAVAILABLE) must not be served again on retry (REQ-007).
+  @AuraEnabled
   public static AddressResult lookupCep(String postalCode) {
     String digits = digitsOf(postalCode);
     if (digits.length() != 8) {
@@ -41,7 +42,7 @@ public with sharing class CustomerController {
   @AuraEnabled
   public static Id saveCustomer(Customer__c customer) {
     if (customer == null) {
-      throw userError(System.Label.Customer_Document_Required);
+      throw userError(System.Label.Customer_Invalid_Data);
     }
     String digits = digitsOf(customer.Postal_Code__c);
     if (digits.length() == 8) {

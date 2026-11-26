@@ -600,4 +600,150 @@ private class CustomerServiceTest {
       'Customer stays in the Recycle Bin'
     );
   }
+
+  // ---------- review findings ----------
+
+  // REQ-021 — a row rejected for another reason does not claim the document in the batch
+  @IsTest
+  static void invalidRowDoesNotBlockSameDocument_REQ021() {
+    Customer__c invalid = CustomerTestDataFactory.buildCustomer(
+      'Primeira',
+      CustomerTestDataFactory.CPF
+    );
+    invalid.Email__c = 'sem-arroba';
+    Customer__c valid = CustomerTestDataFactory.buildCustomer(
+      'Segunda',
+      CustomerTestDataFactory.CPF
+    );
+    List<Database.SaveResult> results;
+    System.runAs(userA()) {
+      Test.startTest();
+      results = Database.insert(
+        new List<Customer__c>{ invalid, valid },
+        false,
+        AccessLevel.USER_MODE
+      );
+      Test.stopTest();
+    }
+    assertRejected(
+      results[0],
+      'Informe um e-mail válido.',
+      'Row with an invalid e-mail'
+    );
+    Assert.isTrue(
+      results[1].isSuccess(),
+      'The valid row keeps the CPF: ' + firstError(results[1])
+    );
+    Assert.areEqual(
+      CustomerTestDataFactory.CPF_FORMATTED,
+      CustomerTestDataFactory.documentOf(results[1].getId()).Document_Number__c,
+      'Document stored for the valid row'
+    );
+  }
+
+  // REQ-020 — partial update: every document stays with its own customer
+  @IsTest
+  static void partialUpdateKeepsDocumentsWithTheirCustomers_REQ020() {
+    User owner = userA();
+    List<Customer__c> customers = new List<Customer__c>{
+      CustomerTestDataFactory.buildCustomer(
+        'A',
+        CustomerTestDataFactory.validCpf(21)
+      ),
+      CustomerTestDataFactory.buildCustomer(
+        'X',
+        CustomerTestDataFactory.validCpf(22)
+      ),
+      CustomerTestDataFactory.buildCustomer(
+        'Y',
+        CustomerTestDataFactory.validCpf(23)
+      )
+    };
+    System.runAs(owner) {
+      insert customers;
+    }
+    List<Database.SaveResult> results;
+    System.runAs(owner) {
+      Test.startTest();
+      results = Database.update(
+        new List<Customer__c>{
+          new Customer__c(Id = customers[0].Id, Email__c = 'sem-arroba'),
+          new Customer__c(
+            Id = customers[1].Id,
+            Document_Input__c = CustomerTestDataFactory.validCpf(22)
+          ),
+          new Customer__c(Id = customers[2].Id, Name = 'Y alterado')
+        },
+        false,
+        AccessLevel.USER_MODE
+      );
+      Test.stopTest();
+    }
+    Assert.isFalse(results[0].isSuccess(), 'A has an invalid e-mail');
+    Assert.isTrue(
+      results[1].isSuccess(),
+      'X resends its own document: ' + firstError(results[1])
+    );
+    Assert.isTrue(
+      results[2].isSuccess(),
+      'Y is a plain update: ' + firstError(results[2])
+    );
+    Assert.areEqual(
+      CustomerTestDataFactory.validCpf(22),
+      CustomerTestDataFactory.documentOf(customers[1].Id).Document_Key__c,
+      'X keeps its document'
+    );
+    Assert.areEqual(
+      CustomerTestDataFactory.validCpf(23),
+      CustomerTestDataFactory.documentOf(customers[2].Id).Document_Key__c,
+      'Y keeps its document'
+    );
+  }
+
+  // AC-032 / REQ-028 — restoring two customers with the same document: the first one wins
+  @IsTest
+  static void restoringTwoWithSameDocumentFirstWins_AC032() {
+    User owner = userA();
+    Customer__c first = CustomerTestDataFactory.buildCustomer(
+      'Primeira',
+      CustomerTestDataFactory.CPF
+    );
+    Customer__c second = CustomerTestDataFactory.buildCustomer(
+      'Segunda',
+      CustomerTestDataFactory.CPF
+    );
+    System.runAs(owner) {
+      insert first;
+      delete first;
+      insert second;
+      delete second;
+    }
+    List<Database.UndeleteResult> results;
+    System.runAs(owner) {
+      Test.startTest();
+      results = Database.undelete(
+        new List<Id>{ first.Id, second.Id },
+        false,
+        AccessLevel.USER_MODE
+      );
+      Test.stopTest();
+    }
+    Assert.isTrue(
+      results[0].isSuccess(),
+      'First customer restored: ' + results[0].getErrors()
+    );
+    Assert.isFalse(
+      results[1].isSuccess(),
+      'Second customer with the same CPF is not restored'
+    );
+    Assert.areEqual(
+      'Já existe um cliente com este CPF/CNPJ.',
+      results[1].getErrors()[0].getMessage(),
+      'Spec message, not a platform error'
+    );
+    Assert.isNotNull(
+      CustomerTestDataFactory.documentOf(first.Id),
+      'Document restored with the first customer'
+    );
+  }
 }

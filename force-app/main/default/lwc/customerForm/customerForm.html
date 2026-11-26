@@ -35,6 +35,8 @@
         <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
           <lightning-input
             data-field="Email__c"
+            type="email"
+            message-when-type-mismatch={labels.invalidEmail}
             label={fieldLabels.Email__c}
             value={customer.Email__c}
             onchange={handleChange}
@@ -43,6 +45,7 @@
         <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
           <lightning-input
             data-field="Phone__c"
+            type="tel"
             label={fieldLabels.Phone__c}
             value={customer.Phone__c}
             onchange={handleChange}
@@ -58,7 +61,7 @@
             onblur={handlePostalCodeBlur}
           ></lightning-input>
           <div
-            class="slds-form-element__help slds-text-color_error"
+            class="slds-assistive-text"
             data-id="postal-code-error"
             aria-live="assertive"
           >

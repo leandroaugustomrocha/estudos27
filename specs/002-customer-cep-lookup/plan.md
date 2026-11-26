@@ -66,7 +66,7 @@ Read Only do cliente) e criptografia (não resolve visibilidade por registro).
 ### D-3. Tela de cadastro (REQ-003 a 007, 018, 019, 026)
 
 - **LWC `customerForm`** (criar e editar): busca automática ao completar 8 dígitos via
-  `CustomerController.lookupCep` (`@AuraEnabled(cacheable=true)`); substitui logradouro,
+  `CustomerController.lookupCep` (`@AuraEnabled`, **sem cache**: o resultado de um serviço externo muda, e o "tente de novo" do REQ-007 precisa consultar de verdade); substitui logradouro,
   bairro, cidade e UF; trava cidade e UF, exceto com o serviço fora do ar; mostra
   "buscando"; erros em toast e nos campos. Mostra o CPF/CNPJ só se
   `CustomerController.getDocument` o devolver (consulta em `USER_MODE`: só dono e admin).
@@ -80,16 +80,25 @@ Read Only do cliente) e criptografia (não resolve visibilidade por registro).
 
 ### D-4. Busca em segundo plano (REQ-008, 024, 025)
 
-- After insert/update agenda **um** Queueable `CustomerAddressLookupJob` (com
-  `Database.AllowsCallouts`) com os Ids dos clientes criados, ou com CEP alterado, fora
-  da tela e com CEP preenchido.
-- O job processa `BATCH_SIZE = 20` clientes por execução e encadeia o restante. Um callout
-  por CEP distinto; o tempo de cada um é o menor entre 120 s e o que resta dos 120 s da
-  transação; o que não couber volta para a fila.
-- Relê os clientes (consulta inline, `USER_MODE`); ignora quem mudou de CEP desde o
-  agendamento. `FOUND` → preenche só logradouro/bairro/cidade/UF vazios; `NOT_FOUND` →
-  apaga o CEP e grava a observação (Custom Label); `UNAVAILABLE` → nada muda.
-- DML em `USER_MODE` como quem importou (dono). A atualização não reagenda busca.
+> Revisado em 2026-11-26 (revisão de código, decisão do usuário): o Queueable encadeado
+> foi trocado por **Batch Apex**. Na Developer Edition só se encadeiam 5 Queueables;
+> com lotes de 20, uma importação de 200 clientes parava na 5ª execução.
+
+- After insert/update dispara **um** Batch `CustomerAddressLookupBatch`
+  (`Database.Batchable`, `Database.AllowsCallouts`, `Database.Stateful`) com os Ids dos
+  clientes criados, ou com CEP alterado, fora da tela e com CEP preenchido. A plataforma
+  divide em blocos de `BATCH_SIZE = 20`, e cada bloco tem seu próprio limite de 120 s de
+  callout — não há encadeamento.
+- Em cada bloco: um callout por CEP distinto; o tempo de cada um é o menor entre 120 s e
+  o que resta do bloco. Se o tempo acabar, ou se a busca for cortada pelo tempo restante
+  (timeout menor que 120 s), o cliente é **adiado**, e não tratado como "fora do ar". No
+  `finish()`, os adiados ganham um novo Batch (até 3 tentativas no total).
+- A consulta usa o CEP atual do cliente (`USER_MODE`). Se o CEP mudar, a própria mudança
+  dispara outra busca. `FOUND` → preenche só logradouro/bairro/cidade/UF vazios;
+  `NOT_FOUND` → apaga o CEP e grava a observação (Custom Label); `UNAVAILABLE` → nada muda.
+- DML em `USER_MODE` como quem importou; falhas de gravação vão para o log. A atualização
+  não dispara nova busca. Se a gravação já acontece dentro de um Batch (de onde não se
+  inicia outro), a busca é pulada com registro no log.
 
 ### D-5. Validações (REQ-002, 005, 012–017, 020, 021, 023)
 
@@ -139,23 +148,23 @@ nem selector). Documento repetido no lote: o primeiro vence.
   documento direto (ver Riscos).
 - Usuário sem Permission Set: negado (REQ-011).
 - `@AuraEnabled`: valida o CEP (8 dígitos) antes do callout; `AuraHandledException` com
-  texto seguro; `cacheable=true` só em `lookupCep` e `getDocument`.
+  texto seguro; `cacheable=true` só em `getDocument` (revisão de código: `lookupCep` sem cache).
 - Nenhum dado além do CEP sai da org.
 
 ## Componentes (inventário)
 
-| Tipo                                 | Nome                                                                                                                                                                                                  | Ação                                                   | REQ                                   |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------- |
-| CustomObject                         | `Customer__c` + 12 campos, aba, layout, list view                                                                                                                                                     | criar (feito na Fase A)                                | 001, 002, 009, 012–014, 018, 023, 024 |
-| CustomObject                         | `Customer_Document__c` + 3 campos                                                                                                                                                                     | criar (feito)                                          | 014–016, 022                          |
-| ExternalCredential + NamedCredential | `ViaCep`                                                                                                                                                                                              | criar (feito)                                          | 003                                   |
-| CustomLabels                         | 9 labels `Customer_*` (+ as do LWC na T25)                                                                                                                                                            | criar (feito)                                          | mensagens                             |
-| PermissionSet                        | `Customer_User`, `Customer_Admin`                                                                                                                                                                     | criar (feito; acesso à classe na T24)                  | 009–011, 022                          |
-| CustomObject (mdt)                   | `Cep_Lookup_Setting__mdt` + registro `Default`                                                                                                                                                        | **remover dos arquivos locais** (nunca foi implantado) | —                                     |
-| ApexTrigger                          | `CustomerTrigger`                                                                                                                                                                                     | criar                                                  | 008, 017, 020–022, 027, 028           |
-| ApexClass                            | `CustomerTriggerHandler`, `CustomerService`, `DocumentValidator`, `CustomerDocumentDuplicateChecker` (without sharing), `ViaCepCallout`, `CustomerAddressLookupJob`, `CustomerController`             | criar                                                  | todos                                 |
-| ApexClass (teste)                    | `CustomerTestDataFactory`, `ViaCepCalloutMock`, `DocumentValidatorTest`, `CustomerServiceTest`, `ViaCepCalloutTest`, `CustomerAddressLookupJobTest`, `CustomerControllerTest`, `CustomerSecurityTest` | criar                                                  | todos                                 |
-| LWC                                  | `customerForm` (+ Jest), aba "Novo cliente", quick action "Editar cliente", layout sem "Editar" padrão                                                                                                | criar/alterar                                          | 003–007, 018, 019, 026                |
+| Tipo                                 | Nome                                                                                                                                                                                                    | Ação                                                   | REQ                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------- |
+| CustomObject                         | `Customer__c` + 12 campos, aba, layout, list view                                                                                                                                                       | criar (feito na Fase A)                                | 001, 002, 009, 012–014, 018, 023, 024 |
+| CustomObject                         | `Customer_Document__c` + 3 campos                                                                                                                                                                       | criar (feito)                                          | 014–016, 022                          |
+| ExternalCredential + NamedCredential | `ViaCep`                                                                                                                                                                                                | criar (feito)                                          | 003                                   |
+| CustomLabels                         | 9 labels `Customer_*` (+ as do LWC na T25)                                                                                                                                                              | criar (feito)                                          | mensagens                             |
+| PermissionSet                        | `Customer_User`, `Customer_Admin`                                                                                                                                                                       | criar (feito; acesso à classe na T24)                  | 009–011, 022                          |
+| CustomObject (mdt)                   | `Cep_Lookup_Setting__mdt` + registro `Default`                                                                                                                                                          | **remover dos arquivos locais** (nunca foi implantado) | —                                     |
+| ApexTrigger                          | `CustomerTrigger`                                                                                                                                                                                       | criar                                                  | 008, 017, 020–022, 027, 028           |
+| ApexClass                            | `CustomerTriggerHandler`, `CustomerService`, `DocumentValidator`, `CustomerDocumentDuplicateChecker` (without sharing), `ViaCepCallout`, `CustomerAddressLookupBatch`, `CustomerController`             | criar                                                  | todos                                 |
+| ApexClass (teste)                    | `CustomerTestDataFactory`, `ViaCepCalloutMock`, `DocumentValidatorTest`, `CustomerServiceTest`, `ViaCepCalloutTest`, `CustomerAddressLookupBatchTest`, `CustomerControllerTest`, `CustomerSecurityTest` | criar                                                  | todos                                 |
+| LWC                                  | `customerForm` (+ Jest), aba "Novo cliente", quick action "Editar cliente", layout sem "Editar" padrão                                                                                                  | criar/alterar                                          | 003–007, 018, 019, 026                |
 
 ## Orçamento de governor limits
 
@@ -163,7 +172,7 @@ nem selector). Documento repetido no lote: o primeiro vence.
 | --------------------- | ------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------- |
 | Trigger, 200 clientes | ≤ 3 (duplicidade; documentos existentes; Lixeira no undelete) | ≤ 3 (documentos; exclusão/restauração; enqueue) | 0                                   |
 | `saveCustomer`        | ≤ 4                                                           | ≤ 2                                             | 1, antes do DML                     |
-| Job, 20 clientes      | 1                                                             | 1                                               | ≤ 20 (CEPs distintos), soma ≤ 120 s |
+| Batch, bloco de 20    | 1                                                             | 1                                               | ≤ 20 (CEPs distintos), soma ≤ 120 s |
 
 ## Plano de testes (rastreável)
 
@@ -174,7 +183,7 @@ nem selector). Documento repetido no lote: o primeiro vence.
 | AC-014, 015 (cálculo)               | `DocumentValidatorTest`                        | CPF e CNPJ numérico/alfanumérico (vetor oficial), inválidos             |
 | AC-003, 005, 006, 007               | `ViaCepCalloutTest` + `CustomerControllerTest` | encontrado / `erro` / 500 / exceção                                     |
 | AC-004, 018, 019, 020, 029          | Jest `customerForm` + `CustomerControllerTest` | busca automática, sobrescrita, travas, troca de CEP, tela por aba/ação  |
-| AC-021, 027, 028, 030               | `CustomerAddressLookupJobTest`                 | só campos vazios; CEP apagado + observação; serviço fora; "Novo" padrão |
+| AC-021, 027, 028, 030               | `CustomerAddressLookupBatchTest`               | só campos vazios; CEP apagado + observação; serviço fora; "Novo" padrão |
 | AC-008–011, 025                     | `CustomerSecurityTest`                         | runAs: cliente e documento para dono × outro × admin × sem acesso       |
 
 Meta: ≥ 90% por classe nova. `CustomerTriggerHandler` e `CustomerDocumentDuplicateChecker`
@@ -195,5 +204,7 @@ confirmação, ou retirar os Permission Sets.
 | Corrida na duplicidade (dois salvamentos simultâneos)                                           | Baixa   | Índice único barra; mensagem da plataforma pode citar o Id — residual aceito                                        |
 | Admin exclui um registro de documento direto (API/Data Loader), deixando o cliente sem CPF/CNPJ | Baixa   | Aceito pelo usuário junto com o Modify All; o número em si não pode ser alterado direto (campo só leitura, testado) |
 | Documento entre before e after insert depende da ordem do `Trigger.new`                         | Baixa   | Ordem garantida pela plataforma; teste de sucesso parcial cobre a reexecução                                        |
+| Limite de 5 Queueables encadeados na Developer Edition                                          | Ocorreu | Achado da revisão de código; resolvido com Batch Apex (D-4)                                                         |
+| Busca em segundo plano adiada várias vezes (serviço lento)                                      | Baixa   | Até 3 tentativas; depois o cliente fica como importado (REQ-025)                                                    |
 | ViaCEP lento em importações grandes                                                             | Média   | Um callout por CEP distinto, lotes de 20, falha = `UNAVAILABLE`                                                     |
 | `Document_Input__c` em logs de depuração                                                        | Baixa   | Logs só do admin; campo limpo antes de gravar                                                                       |
