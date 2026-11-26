@@ -1,6 +1,6 @@
 # 002 — Cadastro de clientes com busca de CEP
 
-> Status: Aprovada (2026-11-26)
+> Status: Implementada (2026-11-26) — deploy na estudos27 com 52/52 testes Apex
 > Nível: Padrão
 
 ## Objetivo
@@ -293,3 +293,4 @@ Nenhuma dúvida em aberto.
 | 2026-11-26 | Spec aprovada                                                                                                                                                                                                                                                         | Aprovação do usuário                                                                 |
 | 2026-11-26 | REQ-026 (tela de cadastro por aba e ação; "Editar" padrão removido); REQ-008 inclui o botão padrão "Novo"; AC-029, AC-030                                                                                                                                             | Verificação T02 do plan: LWC não pode substituir New/Edit padrão; decisão do usuário |
 | 2026-11-26 | REQ-027 (excluir cliente exclui o documento) e REQ-028 (restaurar cliente restaura o documento, salvo duplicidade); AC-031, AC-032                                                                                                                                    | Revisão do plan pela Constituição nova: regra não estava na spec; decisão do usuário |
+| 2026-11-26 | Spec implementada (deploy na estudos27)                                                                                                                                                                                                                               | Deploy confirmado pelo usuário                                                       |

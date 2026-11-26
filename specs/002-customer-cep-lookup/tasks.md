@@ -99,4 +99,7 @@ sharing`); decisão do usuário: Modify All no documento para o admin, com campo
   - Testes novos: 3 Apex no service, 3 no Batch, 15 Jest. Resultado: Apex 52/52
     (cobertura 93,2%–100%), Jest 26/26, lint limpo, dry-run do pacote completo: sucesso
 - [x] T28 Verificação final (CLAUDE.md seção 9) e atualização de spec/plan/tasks
-- [ ] T29 Deploy real — **somente após confirmação do usuário**
+- [x] T29 Deploy real (confirmado pelo usuário) → 2026-11-26: sucesso, 52/52 testes
+      Apex na org, cobertura 93,2%–100%; conferido na org: `CustomerTrigger` ativo,
+      LWC `customerForm` e Named Credential `ViaCep` presentes. Busca real no ViaCEP pela
+      org ainda não executada (usuário sem Permission Set de cliente)
