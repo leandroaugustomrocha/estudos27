@@ -1,58 +1,129 @@
-# Salesforce DX Project
+# estudos27 — Salesforce com Spec-Driven Development
 
-Salesforce DX is a development approach that brings source-driven development, team collaboration, and continuous integration to the Salesforce Platform. Instead of working directly in an org through a web browser, you work with metadata as source files in a local DX project, track changes in version control, and deploy through automated processes.
+Projeto de estudos em Salesforce (Apex, LWC, Flows e metadata) desenvolvido com
+**Spec-Driven Development (SDD)** e apoio do [Claude Code](https://claude.com/claude-code).
+Cada funcionalidade nasce de uma especificação aprovada, vira um plano técnico, é
+implementada com testes primeiro e só é entregue com evidência de verificação.
 
-This project template gets you started with the tools and structure you need to build Salesforce applications using source control, scratch orgs, and the Salesforce CLI.
+Mesmo sendo uma org de estudos (Developer Edition), o código segue práticas de projeto
+real: bulkificação, segurança (sharing, CRUD/FLS), padrão Trigger Handler, testes com
+carga de 200 registros e deploy validado antes de ir para a org.
 
-## Prerequisites
+## Como o trabalho é feito
 
-Before you start, make sure you have:
+O processo completo está no [`CLAUDE.md`](CLAUDE.md). Em resumo:
 
-- **Salesforce CLI** - Download from [developer.salesforce.com/tools/salesforcecli](https://developer.salesforce.com/tools/salesforcecli). See [Install Salesforce CLI](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_install_cli.htm) for details.
-- **VS Code with Salesforce Extension Pack** - See [Installation Instructions](https://developer.salesforce.com/docs/platform/sfvscode-extensions/guide/install.html) for details. Includes the Agentforce Vibes extension.
-- **A development org** - Sign up for a free Developer Edition org [here](https://developer.salesforce.com/signup).
-- **Dev Hub enabled** (optional, required to create scratch orgs) - You can enable Dev Hub in your development org under Setup > Dev Hub.  See [Provide Developers Access to Salesforce DX Tools](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_setup_dx_tools.htm).
+```
+0. Contexto → 1. Spec → 1.5 Dúvidas → [aprovação] → 2. Plan → [aprovação]
+            → 3. Tasks → 4. Implementação (testes primeiro) → 5. Verificação → [deploy]
+```
 
-## Project Structure
+| Documento  | Responde                | Conteúdo                                                                                                                                        |
+| ---------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `spec.md`  | **O quê** e **por quê** | Requisitos no formato "QUANDO/SE … O SISTEMA DEVE …", critérios de aceite (Dado/Quando/Então), fora de escopo, histórico de mudanças            |
+| `plan.md`  | **Como**                | Decisão Flow × Apex × LWC, modelo de dados, segurança, inventário de metadata, orçamento de governor limits, plano de testes rastreável, riscos |
+| `tasks.md` | **Passos**              | Tarefas pequenas e verificáveis, cada uma ligada a um requisito, marcadas conforme são concluídas                                               |
 
-Your DX project follows this structure:
+Princípios que valem em todo código (a "Constituição" do `CLAUDE.md`):
 
-- **`force-app/main/default/`** - Your metadata source files live in this default package directory. You can configure additional package directories in the `sfdx-project.json` file.
-- **`config/`** - Scratch org definitions and project settings
-- **`scripts/`** - Automation scripts for common tasks
-- **`sfdx-project.json`** - Project manifest that defines package directories, namespace, API version, and other project-level settings
+- `with sharing` por padrão; `without sharing` só com justificativa.
+- Um trigger por objeto, sem lógica: trigger → handler → service → selector.
+- Nunca SOQL ou DML dentro de loops.
+- CRUD/FLS respeitados com `WITH USER_MODE` / `AccessLevel.USER_MODE`.
+- Todo Apex com classe de teste: `@TestSetup`, `Assert` com mensagem, cenários positivo,
+  negativo, carga (200+) e `System.runAs`.
+- Configuração em Custom Metadata, textos em Custom Labels, acesso por Permission Set.
+- Rastreabilidade de ponta a ponta: requisito → critério de aceite → teste → commit.
 
-See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm).
+## Projetos
 
-## Get Started
+| #   | Projeto                     | Status                                       | Documentos                                                                                                                                         |
+| --- | --------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 001 | Reserva de salas de reunião | Implementado                                 | [spec](specs/001-meeting-room-booking/spec.md) · [plan](specs/001-meeting-room-booking/plan.md) · [tasks](specs/001-meeting-room-booking/tasks.md) |
+| —   | Projeto (`Project__c`)      | Exercício anterior ao processo SDD, sem spec | —                                                                                                                                                  |
 
-Ready to start developing? The [Get Started with Salesforce DX](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_get_started_dx.htm) guide walks you through your first project, from creating a scratch org to creating a simple Apex class or LWC to deploying your code to a sandbox.
+### 001 — Reserva de salas de reunião
 
-## Common Salesforce CLI Commands
+Colaboradores reservam salas sem conflito de horário; administradores gerenciam as salas.
 
-Here are common CLI commands that you'll use the most:
+- **Regras:** sem sobreposição na mesma sala (o fim é exclusivo, então reservas encostadas
+  são permitidas), capacidade, horário de funcionamento em dias úteis no fuso de quem
+  reserva, duração de 15 min a 4 h, sem reservas no passado e até 90 dias à frente
+  (limites configuráveis), cancelar e reativar, "o primeiro do lote vence" em cargas em
+  massa, revalidação ao restaurar da Lixeira.
+- **Acesso:** todos veem todas as salas e reservas; cada organizador edita, cancela e exclui
+  só as próprias; o administrador gerencia tudo.
+- **Qualidade:** 55 testes Apex, cobertura ≥ 99,6% por classe, 38 critérios de aceite
+  rastreados, revisão de código com correções registradas no `tasks.md`.
 
-- `sf org login web`: Authorize an org
-- `sf org open`: Open your org in a browser
-- `sf org create scratch`: Create a scratch org
-- `sf project deploy start`: Deploy metadata to your org
-- `sf project retrieve start`: Retrieve metadata from your org
-- `sf template generate <artifact>`: Scaffold new components, such as Apex classes and triggers, LWC components, Lightning apps, and more
-- `sf apex <command>`: Run Apex tests, run anonymous Apex blocks, and view logs
-- `sf data <command>`: Work with test data
-- `sf alias <command>`: Manage org aliases
-- `sf config <command>`: Configure CLI settings
+```mermaid
+flowchart LR
+    T[RoomBookingTrigger] --> H[RoomBookingTriggerHandler]
+    H --> S[RoomBookingService]
+    S --> MS[MeetingRoomSelector]
+    S --> RS[RoomBookingSelector]
+    S --> BS[BookingSettings]
+    BS --> MDT[(Booking_Setting__mdt)]
+    MS --> R[(Meeting_Room__c)]
+    RS --> B[(Room_Booking__c)]
+    H -. estende .-> TH[TriggerHandler]
+```
 
-## Use Agentforce Vibes to Build Lightning Apps
+## Estrutura do repositório
 
-Transform your ideas into custom Lightning apps that extend CRM workflows directly in Lightning Experience. Through natural conversations with Agentforce Vibes, implement custom objects and fields, complex business logic, and dynamic UI components. See [Build a Lightning App Using Agentforce Vibes](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/lexapp-overview.html).
+```
+force-app/main/default/   Metadata do Salesforce (objetos, Apex, triggers, LWC, permission sets…)
+specs/                    Uma pasta por funcionalidade: spec.md, plan.md, tasks.md
+agent_docs/               Regras de negócio, segurança, padrões de engenharia e produtividade
+.claude/rules/            Convenções por tipo de arquivo (Apex, LWC, Flows, geral)
+.claude/settings.json     Hook que bloqueia commit se lint ou testes LWC falharem
+scripts/apex/             Scripts de Apex anônimo (inclui a massa de dados da spec 001)
+CLAUDE.md                 Processo SDD e princípios (lido pelo Claude Code)
+AGENTS.md                 Contexto do projeto, stack e comandos (compartilhado entre agentes)
+```
 
-## Additional Resources
+## Como rodar
 
-- [Agentforce Vibes Developer Guide](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/einstein-overview.html)
-- [Salesforce CLI Installation Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/)
-- [Salesforce CLI Plugin Development Guide](https://developer.salesforce.com/docs/platform/salesforce-cli-plugin/guide/conceptual-overview.html)
-- [Salesforce VS Code Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
+**Pré-requisitos:** [Salesforce CLI](https://developer.salesforce.com/tools/salesforcecli),
+Node.js e uma org Developer Edition autenticada com o alias `estudos27`.
 
+```bash
+# Ferramentas (ESLint, Prettier, Jest, Husky)
+npm install
+
+# Autenticar a org
+sf org login web --alias estudos27
+
+# Validar um deploy sem salvar nada (sempre antes do deploy real)
+sf project deploy start --source-dir force-app/main/default/objects/Room_Booking__c \
+  --target-org estudos27 --dry-run
+
+# Testes Apex da spec 001, com cobertura
+sf apex run test --target-org estudos27 \
+  --class-names RoomBookingServiceTest --class-names RoomBookingSecurityTest \
+  --class-names MeetingRoomValidationTest --class-names TriggerHandlerTest \
+  --class-names BookingSettingsTest --code-coverage --result-format human --wait 10
+
+# Lint e testes de LWC
+npm run lint && npm test
+```
+
+### Massa de dados para testar a spec 001
+
+Cria 10 salas e 200 reservas válidas (todas passam pelas regras do trigger). O usuário
+precisa do Permission Set `Meeting_Room_Admin`.
+
+```bash
+sf apex run --file scripts/apex/seed-001-meeting-room-booking.apex --target-org estudos27
+# para remover só esses dados:
+sf apex run --file scripts/apex/cleanup-001-meeting-room-booking.apex --target-org estudos27
+```
+
+## Convenções
+
+- Commits no padrão [Conventional Commits](https://www.conventionalcommits.org/)
+  (`feat:`, `fix:`, `docs:`, `chore:`…), citando a spec quando houver
+  (`feat: 001 meeting room booking`).
+- Mudanças entram por pull request; o deploy é sempre escopado aos componentes da spec.
+- Formatação feita pelo Prettier no pre-commit (Husky + lint-staged).
+- Documentação e mensagens ao usuário em português; código e nomes de API em inglês.
