@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Meeting_Room__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <description
+  >Booked room. Restrict delete: a room with bookings cannot be deleted (REQ-024).</description>
+    <label>Sala</label>
+    <referenceTo>Meeting_Room__c</referenceTo>
+    <relationshipLabel>Reservas</relationshipLabel>
+    <relationshipName>Room_Bookings</relationshipName>
+    <required>true</required>
+    <type>Lookup</type>
+</CustomField>

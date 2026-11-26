@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Opening_Time__c</fullName>
+    <description
+  >Weekday opening time, interpreted in the time zone of the user who books (REQ-007).</description>
+    <label>Hora de abertura</label>
+    <required>true</required>
+    <type>Time</type>
+</CustomField>

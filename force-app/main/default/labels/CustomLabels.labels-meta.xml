@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>Room_Booking_Batch_Conflict</fullName>
+        <categories>RoomBooking</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Room booking: overlap inside the same batch (REQ-025)</shortDescription>
+        <value
+    >Esta reserva conflita com outra reserva do mesmo lote das {0} às {1}.</value>
+    </labels>
+    <labels>
+        <fullName>Room_Booking_Capacity_Exceeded</fullName>
+        <categories>RoomBooking</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Room booking: attendees above capacity (REQ-006)</shortDescription>
+        <value>A sala comporta no máximo {0} pessoas.</value>
+    </labels>
+    <labels>
+        <fullName>Room_Booking_End_Before_Start</fullName>
+        <categories>RoomBooking</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Room booking: end not after start (REQ-004)</shortDescription>
+        <value>O fim da reserva deve ser posterior ao início.</value>
+    </labels>
+    <labels>
+        <fullName>Room_Booking_Invalid_Duration</fullName>
+        <categories>RoomBooking</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Room booking: duration outside limits (REQ-009)</shortDescription>
+        <value>A reserva deve durar entre {0} e {1} minutos.</value>
+    </labels>
+    <labels>
+        <fullName>Room_Booking_Outside_Hours</fullName>
+        <categories>RoomBooking</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Room booking: outside opening hours (REQ-007)</shortDescription>
+        <value>Esta sala funciona de segunda a sexta, das {0} às {1}.</value>
+    </labels>
+    <labels>
+        <fullName>Room_Booking_Room_Conflict</fullName>
+        <categories>RoomBooking</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Room booking: overlap with a saved booking (REQ-005)</shortDescription>
+        <value>Esta sala já está reservada das {0} às {1}.</value>
+    </labels>
+    <labels>
+        <fullName>Room_Booking_Room_Inactive</fullName>
+        <categories>RoomBooking</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Room booking: inactive room (REQ-008)</shortDescription>
+        <value>Esta sala não está disponível para reservas.</value>
+    </labels>
+    <labels>
+        <fullName>Room_Booking_Start_In_Past</fullName>
+        <categories>RoomBooking</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Room booking: start in the past (REQ-019)</shortDescription>
+        <value>Não é possível reservar um horário que já passou.</value>
+    </labels>
+    <labels>
+        <fullName>Room_Booking_Too_Far_Ahead</fullName>
+        <categories>RoomBooking</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription
+    >Room booking: beyond max advance days (REQ-019)</shortDescription>
+        <value
+    >As reservas podem ser feitas com no máximo {0} dias de antecedência.</value>
+    </labels>
+</CustomLabels>
