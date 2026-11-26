@@ -1,6 +1,6 @@
 # 001 — Reserva de salas de reunião
 
-> Status: Implementada (2026-11-26) — deploy na estudos27 com 54/54 testes
+> Status: Implementada (2026-11-26) — deploy na estudos27 com 55/55 testes (commit 56a9ee1)
 > Nível: Padrão
 
 ## Objetivo
