@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description
+  >Customer form with postal code lookup (spec 002, REQ-026).</description>
+    <label>Novo cliente</label>
+    <lwcComponent>customerForm</lwcComponent>
+    <motif>Custom24: Red Cross</motif>
+</CustomTab>
